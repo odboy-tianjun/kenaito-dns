@@ -1,44 +1,81 @@
 package main
 
+/*
+ * @Description  服务入口
+ * @Author  www.odboy.cn
+ * @Date  20241107
+ */
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/miekg/dns"
-	"log"
+	"kenaito-dns/config"
+	"kenaito-dns/controller"
+	"kenaito-dns/core"
+	"net/http"
+	"time"
 )
 
 func main() {
+	fmt.Println("[app]  [info]  kenaito-dns version = " + config.AppVersion)
+	go initDNSServer()
+	initRestfulServer()
+}
+
+func initDNSServer() {
 	// 注册 DNS 请求处理函数
-	dns.HandleFunc(".", handleDNSRequest)
+	dns.HandleFunc(".", core.HandleDNSRequest)
 	// 设置服务器地址和协议
-	server := &dns.Server{Addr: ":53", Net: "udp"}
+	server := &dns.Server{Addr: config.DnsServerPort, Net: "udp"}
 	// 开始监听
-	log.Printf("Starting DNS server on %s\n", server.Addr)
+	fmt.Printf("[dns]  [info]  Starting DNS server on %s\n", server.Addr)
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to start server: %s\n", err.Error())
+		fmt.Printf("[dns]  [error]  Failed to start DNS server: %s\n", err.Error())
 	}
 }
 
-func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
-	msg := new(dns.Msg)
-	msg.SetReply(r)
-	// 将 DNS 响应标记为权威应答
-	msg.Authoritative = true
-	// 将 DNS 响应标记为递归可用
-	// msg.RecursionAvailable = true
-	// 遍历请求中的问题部分，生成相应的回答
-	for _, question := range r.Question {
-		switch question.Qtype {
-		case dns.TypeA:
-			handleARecord(question, msg)
-			//case dns.TypeAAAA:
-			//	handleAAAARecord(question, msg)
-			//case dns.TypeCNAME:
-			//	handleCNAMERecord(question, msg)
-			//case dns.TypeMX:
-			//	handleMXRecord(question, msg)
-			//case dns.TypeTXT:
-			//	handleTXTRecord(question, msg)
-		}
+func initRestfulServer() {
+	gin.SetMode(config.WebMode)
+	// 创建一个新的 Gin 引擎实例，使用 gin.New() 方法来创建一个不包含任何默认中间件的实例
+	router := gin.New()
+	// LoggerWithFormatter 中间件会写入日志到 gin.DefaultWriter
+	// 默认 gin.DefaultWriter = os.Stdout
+	// 自定义的日志格式化函数
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		// 自定义日志格式
+		return fmt.Sprintf("[gin]  [info]  %s [Request] [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+			// 请求时间戳
+			param.TimeStamp.Format(config.AppTimeFormat),
+			// 客户端 IP 地址
+			param.ClientIP,
+			// 请求方法 (GET, POST 等)
+			param.Method,
+			// 请求路径
+			param.Path,
+			// 请求协议
+			param.Request.Proto,
+			// 响应状态码
+			param.StatusCode,
+			// 请求延迟时间
+			param.Latency,
+			// 用户代理
+			param.Request.UserAgent(),
+			// 错误信息（如果有的话）
+			param.ErrorMessage,
+		)
+	}))
+	// 使用 Recovery 中间件，处理任何出现的错误，并防止服务崩溃
+	router.Use(gin.Recovery())
+	server := &http.Server{
+		Addr:         config.WebServerPort,
+		Handler:      router,
+		ReadTimeout:  config.WebReadTimeout * time.Second,
+		WriteTimeout: config.WebWriteTimeout * time.Second,
 	}
-	// 发送响应
-	w.WriteMsg(msg)
+	controller.InitRestFunc(router)
+	fmt.Printf("[gin]  [info]  Start Gin server: %s\n", config.WebServerPort)
+	err := server.ListenAndServe()
+	if err != nil {
+		fmt.Printf("[gin]  [error]  Failed to start Gin server: %s\n", config.WebServerPort)
+	}
 }
