@@ -1,11 +1,15 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/miekg/dns"
 	"log"
+	"net/http"
+	"time"
 )
 
 func main() {
+	initRestfulServer()
 	// 注册 DNS 请求处理函数
 	dns.HandleFunc(".", handleDNSRequest)
 	// 设置服务器地址和协议
@@ -41,4 +45,21 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 	// 发送响应
 	w.WriteMsg(msg)
+}
+
+func initRestfulServer() {
+	router := gin.Default()
+	s := &http.Server{
+		Addr:         ":18001",
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	initRestFunc(router)
+	err := s.ListenAndServe()
+	if err != nil {
+		log.Fatalln("restful服务监听失败")
+		panic("restful服务监听失败")
+	}
+	log.Println("restful服务监听ing")
 }
