@@ -8,9 +8,12 @@ package core
 import (
 	"fmt"
 	"github.com/miekg/dns"
+	"kenaito-dns/cache"
+	"kenaito-dns/config"
 	"kenaito-dns/constant"
 	"kenaito-dns/dao"
 	"net"
+	"time"
 )
 
 func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
@@ -46,7 +49,16 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 func handleARecord(q dns.Question, msg *dns.Msg) {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
-	records := dao.FindResolveRecordByNameType(queryName, constant.R_A)
+	var records []dao.ResolveRecord
+	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_A)
+	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
+	if ok {
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		records = value.([]dao.ResolveRecord)
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+	} else {
+		records = dao.FindResolveRecordByNameType(queryName, constant.R_A)
+	}
 	if len(records) > 0 {
 		for _, record := range records {
 			fmt.Printf("=== A记录 === 请求解析的域名：%s,解析的目标IP地址:%s\n", name, record.Value)
@@ -69,7 +81,16 @@ func handleARecord(q dns.Question, msg *dns.Msg) {
 func handleAAAARecord(q dns.Question, msg *dns.Msg) {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
-	records := dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
+	var records []dao.ResolveRecord
+	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_AAAA)
+	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
+	if ok {
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		records = value.([]dao.ResolveRecord)
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+	} else {
+		records = dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
+	}
 	if len(records) > 0 {
 		for _, record := range records {
 			fmt.Printf("=== AAAA记录 === 请求解析的域名：%s,解析的目标IP地址:%s\n", name, record.Value)
@@ -92,7 +113,16 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) {
 func handleCNAMERecord(q dns.Question, msg *dns.Msg) {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
-	records := dao.FindResolveRecordByNameType(queryName, constant.R_CNAME)
+	var records []dao.ResolveRecord
+	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_CNAME)
+	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
+	if ok {
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		records = value.([]dao.ResolveRecord)
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+	} else {
+		records = dao.FindResolveRecordByNameType(queryName, constant.R_CNAME)
+	}
 	if len(records) > 0 {
 		for _, record := range records {
 			fmt.Printf("=== CNAME记录 === 请求解析的域名：%s,解析的目标域名:%s\n", name, record.Value)
@@ -114,7 +144,16 @@ func handleCNAMERecord(q dns.Question, msg *dns.Msg) {
 func handleMXRecord(q dns.Question, msg *dns.Msg) {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
-	records := dao.FindResolveRecordByNameType(queryName, constant.R_MX)
+	var records []dao.ResolveRecord
+	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_MX)
+	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
+	if ok {
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		records = value.([]dao.ResolveRecord)
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+	} else {
+		records = dao.FindResolveRecordByNameType(queryName, constant.R_MX)
+	}
 	if len(records) > 0 {
 		for _, record := range records {
 			fmt.Printf("=== MX记录 === 请求解析的域名：%s,解析的目标域名:%s, MX优先级: 10\n", name, record.Value)
@@ -137,7 +176,16 @@ func handleMXRecord(q dns.Question, msg *dns.Msg) {
 func handleTXTRecord(q dns.Question, msg *dns.Msg) {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
-	records := dao.FindResolveRecordByNameType(queryName, constant.R_TXT)
+	var records []dao.ResolveRecord
+	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_TXT)
+	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
+	if ok {
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		records = value.([]dao.ResolveRecord)
+		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+	} else {
+		records = dao.FindResolveRecordByNameType(queryName, constant.R_TXT)
+	}
 	if len(records) > 0 {
 		for _, record := range records {
 			fmt.Printf("=== TXT记录 === 请求解析的域名：%s,解析的目标值:%s\n", name, record.Value)

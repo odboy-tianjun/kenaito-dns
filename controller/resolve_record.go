@@ -8,6 +8,7 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"kenaito-dns/cache"
 	"kenaito-dns/constant"
 	"kenaito-dns/dao"
 	"kenaito-dns/domain"
@@ -46,6 +47,7 @@ func InitRestFunc(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("添加"+newRecord.RecordType+"记录失败, %v", err)})
 			return
 		}
+		cache.ReloadCache()
 		body := make(map[string]interface{})
 		body["oldVersion"] = oldVersion
 		body["newVersion"] = newVersion
@@ -77,6 +79,7 @@ func InitRestFunc(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("删除"+newRecord.RecordType+"记录失败, %v", err)})
 			return
 		}
+		cache.ReloadCache()
 		body := make(map[string]interface{})
 		body["oldVersion"] = oldVersion
 		body["newVersion"] = newVersion
@@ -116,6 +119,7 @@ func InitRestFunc(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("更新"+newRecord.RecordType+"记录失败, %v", err)})
 			return
 		}
+		cache.ReloadCache()
 		body := make(map[string]interface{})
 		body["oldVersion"] = oldVersion
 		body["newVersion"] = newVersion
@@ -173,6 +177,7 @@ func InitRestFunc(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("回滚失败, %v", err)})
 			return
 		}
+		cache.ReloadCache()
 		body := make(map[string]interface{})
 		body["currentVersion"] = jsonObj.Version
 		c.JSON(http.StatusOK, gin.H{

@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	fmt.Println("[app]  [info]  kenaito-dns version = " + config.AppVersion)
+	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " kenaito-dns version = " + config.AppVersion)
 	go cache.ReloadCache()
 	go initDNSServer()
 	initRestfulServer()
@@ -30,9 +30,9 @@ func initDNSServer() {
 	// 设置服务器地址和协议
 	server := &dns.Server{Addr: config.DnsServerPort, Net: "udp"}
 	// 开始监听
-	fmt.Printf("[dns]  [info]  Starting DNS server on %s\n", server.Addr)
+	fmt.Printf("[dns]  [info]  "+time.Now().Format(config.AppTimeFormat)+" Starting DNS server on %s\n", server.Addr)
 	if err := server.ListenAndServe(); err != nil {
-		fmt.Printf("[dns]  [error]  Failed to start DNS server: %s\n", err.Error())
+		fmt.Printf("[dns]  [error]  "+time.Now().Format(config.AppTimeFormat)+" Failed to start DNS server: %s\n", err.Error())
 	}
 }
 
@@ -75,9 +75,9 @@ func initRestfulServer() {
 		WriteTimeout: config.WebWriteTimeout * time.Second,
 	}
 	controller.InitRestFunc(router)
-	fmt.Printf("[gin]  [info]  Start Gin server: %s\n", config.WebServerPort)
+	fmt.Printf("[gin]  [info]  "+time.Now().Format(config.AppTimeFormat)+" Start Gin server: %s\n", config.WebServerPort)
 	err := server.ListenAndServe()
 	if err != nil {
-		fmt.Printf("[gin]  [error]  Failed to start Gin server: %s\n", config.WebServerPort)
+		fmt.Printf("[gin]  [error]  "+time.Now().Format(config.AppTimeFormat)+" Failed to start Gin server: %s\n", config.WebServerPort)
 	}
 }

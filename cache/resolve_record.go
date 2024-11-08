@@ -2,14 +2,17 @@ package cache
 
 import (
 	"fmt"
+	"kenaito-dns/config"
 	"kenaito-dns/dao"
 	"sync"
+	"time"
 )
 
 var KeyResolveRecordMap sync.Map
 var IdResolveRecordMap sync.Map
 
 func ReloadCache() {
+	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache start")
 	resolveRecords := dao.FindResolveRecordByVersion(dao.GetResolveVersion())
 	for _, record := range resolveRecords {
 		// id -> resolveRecord
@@ -18,15 +21,14 @@ func ReloadCache() {
 		cacheKey := fmt.Sprintf("%s-%s", record.Name, record.RecordType)
 		records, ok := KeyResolveRecordMap.Load(cacheKey)
 		if !ok {
-			fmt.Println("读取缓存失败, key=" + cacheKey)
 			var tempRecords []dao.ResolveRecord
 			tempRecords = append(tempRecords, record)
 			KeyResolveRecordMap.Store(cacheKey, tempRecords)
 		} else {
-			fmt.Println("读取缓存成功, key=" + cacheKey)
 			var newRecords = records.([]dao.ResolveRecord)
 			records = append(newRecords, record)
 			KeyResolveRecordMap.Store(cacheKey, records)
 		}
 	}
+	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache end")
 }
