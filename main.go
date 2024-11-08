@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/miekg/dns"
+	"kenaito-dns/cache"
 	"kenaito-dns/config"
 	"kenaito-dns/controller"
 	"kenaito-dns/core"
@@ -18,6 +19,7 @@ import (
 
 func main() {
 	fmt.Println("[app]  [info]  kenaito-dns version = " + config.AppVersion)
+	go cache.ReloadCache()
 	go initDNSServer()
 	initRestfulServer()
 }

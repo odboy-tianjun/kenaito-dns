@@ -14,7 +14,7 @@ type ResolveVersion struct {
 	CurrentVersion int `xorm:"not null integer 'curr_version'"`
 }
 
-func getResolveVersion() int {
+func GetResolveVersion() int {
 	var records []ResolveVersion
 	err := Engine.Table("resolve_config").Where("`id` = ?", 1).Find(&records)
 	if err != nil {
