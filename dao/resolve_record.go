@@ -21,6 +21,10 @@ type ResolveRecord struct {
 	Version    int    `xorm:"not null integer 'version'"`
 }
 
+func (ResolveRecord) TableName() string {
+	return "resolve_record"
+}
+
 func FindResolveRecordById(id int) ResolveRecord {
 	var record ResolveRecord
 	_, err := Engine.Table("resolve_record").Where("`id` = ?", id).Get(&record)
