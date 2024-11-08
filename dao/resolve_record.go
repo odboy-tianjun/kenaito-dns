@@ -41,7 +41,7 @@ func FindResolveRecordByVersion(version int) []ResolveRecord {
 
 func FindResolveRecordByNameType(name string, recordType string) []ResolveRecord {
 	var records []ResolveRecord
-	err := Engine.Table("resolve_record").Where("`name` = ? and `record_type` = ? and `version` = ?", name, recordType, getResolveVersion()).Find(&records)
+	err := Engine.Table("resolve_record").Where("`name` = ? and `record_type` = ? and `version` = ?", name, recordType, GetResolveVersion()).Find(&records)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -75,7 +75,7 @@ func FindResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs)
 			session.And("`value` = ?", qs)
 		}
 	}
-	session.And("`version` = ?", getResolveVersion())
+	session.And("`version` = ?", GetResolveVersion())
 	err := session.Limit(pageSize, offset).Find(&records)
 	if err != nil {
 		fmt.Println(err)
@@ -94,8 +94,8 @@ func SaveResolveRecord(wrapper *ResolveRecord) (bool, error) {
 
 func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
 	var backupRecords []*ResolveRecord
-	oldVersion := getResolveVersion()
-	newVersion := getResolveVersion() + 1
+	oldVersion := GetResolveVersion()
+	newVersion := GetResolveVersion() + 1
 	oldRecords := FindResolveRecordByVersion(oldVersion)
 	for _, oldRecord := range oldRecords {
 		newRecord := new(ResolveRecord)
@@ -134,7 +134,7 @@ func RemoveResolveRecord(wrapper *ResolveRecord) (bool, error) {
 }
 
 func IsResolveRecordExist(wrapper *ResolveRecord) bool {
-	wrapper.Version = getResolveVersion()
+	wrapper.Version = GetResolveVersion()
 	count, err := Engine.Table("resolve_record").Count(wrapper)
 	if err != nil {
 		fmt.Println(err)
@@ -154,7 +154,7 @@ func IsUpdResolveRecordExist(id int, wrapper *ResolveRecord) bool {
 	r.Name = wrapper.Name
 	r.RecordType = wrapper.RecordType
 	r.Value = wrapper.Value
-	r.Version = getResolveVersion()
+	r.Version = GetResolveVersion()
 	count, err := Engine.Table("resolve_record").Where("id != ?", id).Count(r)
 	if err != nil {
 		fmt.Println(err)
