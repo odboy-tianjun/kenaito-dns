@@ -61,7 +61,7 @@ more than 7 hours
 gcc -v
 ```
 
-## 问题解决
+## 常见问题
 
 #### nslookup 命令不存在解决
 
