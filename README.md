@@ -40,6 +40,7 @@ more than 7 hours
 - 支持A、AAAA、MX、TXT、CNAME记录解析
 
 ## 待办清单
+- 支持回滚 2024-11-08 [ok]
 - 添加缓存 2024-11-09 [ok]
 
 ## 运行配置
