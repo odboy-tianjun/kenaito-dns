@@ -78,7 +78,7 @@ nslookup example.com 192.168.1.103
 - [DNS解析 - miekg/dns](https://github.com/miekg/dns)
 - [Web - gin](https://gin-gonic.com/zh-cn/docs/quickstart/)
 
-## 代码托管
+## 代码托管（以私人仓库Gitea为准）
 
 - Gitea: [https://gitea.odboy.cn/odboy/kenaito-dns](https://gitea.odboy.cn/odboy/kenaito-dns)
 - Github: [https://github.com/odboy-tianjun/kenaito-dns](https://github.com/odboy-tianjun/kenaito-dns)
