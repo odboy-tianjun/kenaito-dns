@@ -15,7 +15,7 @@ Bind9不能直接支持API的方式添加解析记录， 通过脚本修改Bind�
 
 ## 接口文档
 
-[在线阅读](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns.html)
+[在线阅读](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/index.html)
 
 ## 项目结构
 
@@ -60,6 +60,42 @@ more than 7 hours
 ```shell
 gcc -v
 ```
+
+#### 编译
+- GOOS代表程序构建环境的目标操作系统，其值可以是liunx，windows，freebsd，darwin
+- GORACH代表程序构建环境的目标计算架构，其值可以是386，amd64或arm
+```shell
+# Windows
+set GOOS=windows
+set GOARCH=amd64
+set CGO_ENABLED=0
+go build -o ./bin/kenaito-dns_windows_amd64 main.go
+```
+```shell
+# Linux
+set GOOS=linux
+set GOARCH=amd64
+set CGO_ENABLED=0
+go build -o ./bin/kenaito-dns_linux_amd64 main.go
+```
+```shell
+# Mac
+set GOOS=darwin
+set GOARCH=amd64
+set CGO_ENABLED=0
+go build -o ./bin/kenaito-dns_darwin_amd64 main.go
+```
+
+#### 运行
+```shell
+# 例子：在Windows平台上
+# 将编译产出的 kenaito-dns_windows_amd64 与 dns.sqlite3 文件放在同一目录下， 执行以下命令运行即可
+./kenaito-dns_windows_amd64
+```
+![jietu1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/P20241109140144.png)
+
+#### 解析测试
+- 新增解析对比操作
 
 ## 常见问题
 
