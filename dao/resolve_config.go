@@ -10,8 +10,8 @@ import (
 )
 
 type ResolveVersion struct {
-	Id             int `xorm:"pk not null integer 'id' autoincr"`
-	CurrentVersion int `xorm:"not null integer 'curr_version'"`
+	Id             int `xorm:"pk not null integer 'id' autoincr" json:"id"`
+	CurrentVersion int `xorm:"not null integer 'curr_version'" json:"currentVersion"`
 }
 
 func (ResolveVersion) TableName() string {

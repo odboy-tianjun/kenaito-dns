@@ -13,25 +13,41 @@ import (
 )
 
 type ResolveRecord struct {
-	Id         int    `xorm:"pk not null integer 'id' autoincr"`
-	Name       string `xorm:"not null text 'name'"`
-	RecordType string `xorm:"not null text 'record_type'"`
-	Ttl        int    `xorm:"not null integer 'ttl'"`
-	Value      string `xorm:"not null text 'value'"`
-	Version    int    `xorm:"not null integer 'version'"`
+	Id         int    `xorm:"pk not null integer 'id' autoincr" json:"id"`
+	Name       string `xorm:"not null text 'name'" json:"name"`
+	RecordType string `xorm:"not null text 'record_type'" json:"recordType"`
+	Ttl        int    `xorm:"not null integer 'ttl'" json:"ttl"`
+	Value      string `xorm:"not null text 'value'" json:"value"`
+	Version    int    `xorm:"not null integer 'version'" json:"version"`
 }
 
 func (ResolveRecord) TableName() string {
 	return "resolve_record"
 }
 
-func FindResolveRecordById(id int) ResolveRecord {
+func FindResolveRecordById(id int) *ResolveRecord {
 	var record ResolveRecord
 	_, err := Engine.Table("resolve_record").Where("`id` = ?", id).Get(&record)
 	if err != nil {
 		fmt.Println(err)
+		return nil
 	}
-	return record
+	return &record
+}
+
+func FindOneResolveRecord(wrapper *ResolveRecord, version int) *ResolveRecord {
+	var record ResolveRecord
+	_, err := Engine.Table("resolve_record").Where("`name` = ? and `record_type` = ? and `value` = ? and `version` = ?",
+		wrapper.Name,
+		wrapper.RecordType,
+		wrapper.Value,
+		version,
+	).Get(&record)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return &record
 }
 
 func FindResolveRecordByVersion(version int) []ResolveRecord {
@@ -154,12 +170,8 @@ func IsResolveRecordExistById(id int) bool {
 }
 
 func IsUpdResolveRecordExist(id int, wrapper *ResolveRecord) bool {
-	r := new(ResolveRecord)
-	r.Name = wrapper.Name
-	r.RecordType = wrapper.RecordType
-	r.Value = wrapper.Value
-	r.Version = GetResolveVersion()
-	count, err := Engine.Table("resolve_record").Where("id != ?", id).Count(r)
+	wrapper.Version = GetResolveVersion()
+	count, err := Engine.Table("resolve_record").Where("id != ?", id).Count(wrapper)
 	if err != nil {
 		fmt.Println(err)
 		return false
