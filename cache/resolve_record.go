@@ -13,6 +13,8 @@ var IdResolveRecordMap sync.Map
 
 func ReloadCache() {
 	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache start")
+	KeyResolveRecordMap.Range(cleanKeyCache)
+	IdResolveRecordMap.Range(cleanIdCache)
 	resolveRecords := dao.FindResolveRecordByVersion(dao.GetResolveVersion())
 	for _, record := range resolveRecords {
 		// id -> resolveRecord
@@ -31,4 +33,14 @@ func ReloadCache() {
 		}
 	}
 	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache end")
+}
+
+func cleanKeyCache(key any, value any) bool {
+	KeyResolveRecordMap.Delete(key)
+	return true
+}
+
+func cleanIdCache(key any, value any) bool {
+	IdResolveRecordMap.Delete(key)
+	return true
 }

@@ -7,6 +7,7 @@ require (
 	github.com/go-xorm/xorm v0.7.9
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/miekg/dns v1.1.62
+	xorm.io/core v0.7.2-0.20190928055935-90aeac8d08eb
 )
 
 require (
@@ -43,5 +44,4 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	xorm.io/builder v0.3.11-0.20220531020008-1bd24a7dc978 // indirect
-	xorm.io/core v0.7.2-0.20190928055935-90aeac8d08eb // indirect
 )

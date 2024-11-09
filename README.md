@@ -40,6 +40,7 @@ more than 7 hours
 - 支持A、AAAA、MX、TXT、CNAME记录解析
 
 ## 待办清单
+
 - 支持回滚 2024-11-08 [ok]
 - 添加缓存 2024-11-09 [ok]
 
@@ -62,8 +63,14 @@ gcc -v
 ```
 
 #### 编译
+
 - GOOS代表程序构建环境的目标操作系统，其值可以是liunx，windows，freebsd，darwin
 - GORACH代表程序构建环境的目标计算架构，其值可以是386，amd64或arm
+
+```text
+首先，配置代理，并在项目根目录执行 go mod tidy 安装依赖
+```
+
 ```shell
 # Windows
 set GOOS=windows
@@ -71,6 +78,7 @@ set GOARCH=amd64
 set CGO_ENABLED=0
 go build -o ./bin/kenaito-dns_windows_amd64 main.go
 ```
+
 ```shell
 # Linux
 set GOOS=linux
@@ -78,6 +86,7 @@ set GOARCH=amd64
 set CGO_ENABLED=0
 go build -o ./bin/kenaito-dns_linux_amd64 main.go
 ```
+
 ```shell
 # Mac
 set GOOS=darwin
@@ -87,15 +96,27 @@ go build -o ./bin/kenaito-dns_darwin_amd64 main.go
 ```
 
 #### 运行
-```shell
-# 例子：在Windows平台上
-# 将编译产出的 kenaito-dns_windows_amd64 与 dns.sqlite3 文件放在同一目录下， 执行以下命令运行即可
-./kenaito-dns_windows_amd64
-```
-![jietu1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/P20241109140144.png)
 
-#### 解析测试
-- 新增解析对比操作
+```shell
+# 例子：在 Mac 平台上
+# 将编译产出的 kenaito-dns_darwin_amd64 与 dns.sqlite3 文件放在同一目录下， 执行以下命令运行即可
+./kenaito-dns_darwin_amd64
+```
+
+![jietu1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/jietu1.png)
+
+#### 测试
+```text
+服务所在的ip地址为 192.168.43.130
+
+所需工具：brew install watch
+
+测试命令：watch -n 2 nslookup demo2024.odboy.cn 192.168.43.130
+```
+- 新增A解析记录
+- 删除A解析记录
+- 修改A解析记录
+- 回滚解析记录
 
 ## 常见问题
 
