@@ -19,7 +19,7 @@ import (
 
 func main() {
 	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " kenaito-dns version = " + config.AppVersion)
-	go cache.ReloadCache()
+	cache.ReloadCache()
 	go initDNSServer()
 	initRestfulServer()
 }
