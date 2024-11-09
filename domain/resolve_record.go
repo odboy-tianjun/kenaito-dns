@@ -22,7 +22,7 @@ type ModifyResolveRecord struct {
 	Id    int    `json:"id" binding:"required"`
 	Name  string `json:"name" binding:"required"`
 	Type  string `json:"type" binding:"required"`
-	Ttl   int    `json:"ttl" binding:"required"`
+	Ttl   int    `json:"ttl"`
 	Value string `json:"value" binding:"required"`
 }
 
