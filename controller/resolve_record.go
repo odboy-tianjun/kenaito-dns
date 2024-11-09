@@ -39,7 +39,7 @@ func InitRestFunc(r *gin.Engine) {
 		newRecord.Ttl = jsonObj.Ttl
 		executeResult, err, oldVersion, newVersion := dao.BackupResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("添加"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份"+newRecord.RecordType+"记录失败, %v", err)})
 			return
 		}
 		executeResult, _ = dao.SaveResolveRecord(newRecord)
@@ -71,7 +71,7 @@ func InitRestFunc(r *gin.Engine) {
 		}
 		executeResult, err, oldVersion, newVersion := dao.BackupResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("删除"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份"+newRecord.RecordType+"记录失败, %v", err)})
 			return
 		}
 		executeResult, err = dao.RemoveResolveRecord(newRecord)
@@ -93,28 +93,42 @@ func InitRestFunc(r *gin.Engine) {
 	r.POST("/modify", func(c *gin.Context) {
 		var jsonObj domain.ModifyResolveRecord
 		err := c.ShouldBindJSON(&jsonObj)
+		newRecord, isErr := validModifyRequestBody(c, err, jsonObj.Name, jsonObj.Type, jsonObj.Ttl, jsonObj.Value)
+		if isErr {
+			return
+		}
 		if jsonObj.Id == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "参数ID(id)必填"})
 			return
 		}
-		newRecord, isErr := validRequestBody(c, err, jsonObj.Name, jsonObj.Type, jsonObj.Ttl, jsonObj.Value, false)
-		if isErr {
-			return
-		}
 		if !dao.IsResolveRecordExistById(jsonObj.Id) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "记录 " + newRecord.Name + " " + newRecord.RecordType + " " + newRecord.Value + " 不存在"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("记录 id=%d 不存在", jsonObj.Id)})
 			return
 		}
 		if dao.IsUpdResolveRecordExist(jsonObj.Id, newRecord) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "记录 " + newRecord.Name + " " + newRecord.RecordType + " " + newRecord.Value + " 已存在"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "记录 " + jsonObj.Name + " " + jsonObj.Type + " " + jsonObj.Value + " 已存在"})
 			return
 		}
+		localOldRecord := dao.FindResolveRecordById(jsonObj.Id)
 		executeResult, err, oldVersion, newVersion := dao.BackupResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("修改"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份"+newRecord.RecordType+"记录失败, %v", err)})
 			return
 		}
-		executeResult, err = dao.ModifyResolveRecordById(jsonObj.Id, newRecord)
+		localNewRecord := dao.FindOneResolveRecord(localOldRecord, newVersion)
+		if localNewRecord == nil || localNewRecord.Id == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("查询待更新" + newRecord.RecordType + "记录失败")})
+			return
+		}
+		if localNewRecord.Ttl == 0 {
+			localNewRecord.Ttl = 10
+		}
+		updRecord := new(dao.ResolveRecord)
+		updRecord.Name = newRecord.Name
+		updRecord.RecordType = newRecord.RecordType
+		updRecord.Ttl = newRecord.Ttl
+		updRecord.Value = newRecord.Value
+		executeResult, err = dao.ModifyResolveRecordById(localNewRecord.Id, updRecord)
 		if !executeResult {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("更新"+newRecord.RecordType+"记录失败, %v", err)})
 			return
@@ -187,7 +201,6 @@ func InitRestFunc(r *gin.Engine) {
 		return
 	})
 }
-
 func validRequestBody(c *gin.Context, err error, name string, recordType string, ttl int, value string, isDelete bool) (*dao.ResolveRecord, bool) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
@@ -210,6 +223,55 @@ func validRequestBody(c *gin.Context, err error, name string, recordType string,
 			c.JSON(http.StatusBadRequest, gin.H{"message": "参数缓存有效时间(ttl)有误，必须大于等于10"})
 			return nil, true
 		}
+	}
+	if !util.IsValidName(name) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "参数主机记录(name)有误，无效的主机记录"})
+		return nil, true
+	}
+	switch recordType {
+	case constant.R_A:
+		if !util.IsIPv4(value) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "参数记录值(value)有误，无效的IPv4地址"})
+			return nil, true
+		}
+	case constant.R_AAAA:
+		if !util.IsIPv6(value) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "参数记录值(value)有误，无效的IPv6地址"})
+			return nil, true
+		}
+	case constant.R_CNAME:
+		if !util.IsValidDomain(value) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "参数记录值(value)有误，无效的主机记录"})
+			return nil, true
+		}
+	case constant.R_MX:
+		if !util.IsValidDomain(value) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "参数记录值(value)有误，无效的主机记录"})
+			return nil, true
+		}
+	case constant.R_TXT:
+		if len(value) > 512 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "参数记录值(value)有误，长度必须 <= 512"})
+			return nil, true
+		}
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "参数记录值(type)有误，不支持的记录类型: " + recordType})
+		return nil, true
+	}
+	newRecord := new(dao.ResolveRecord)
+	newRecord.Name = strings.TrimSpace(name)
+	newRecord.RecordType = strings.TrimSpace(recordType)
+	newRecord.Value = strings.TrimSpace(value)
+	return newRecord, false
+}
+func validModifyRequestBody(c *gin.Context, err error, name string, recordType string, ttl int, value string) (*dao.ResolveRecord, bool) {
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
+		return nil, true
+	}
+	if ttl != 0 && ttl < 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "参数缓存有效时间(ttl)有误，必须大于等于10"})
+		return nil, true
 	}
 	if !util.IsValidName(name) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "参数主机记录(name)有误，无效的主机记录"})
