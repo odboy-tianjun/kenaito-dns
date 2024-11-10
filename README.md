@@ -116,16 +116,20 @@ go build -o ./bin/kenaito-dns_darwin_amd64 main.go
 ```
 
 - 新增A解析记录
-  ![AddRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/AddRR.gif)
+
+![AddRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/AddRR.gif)
 
 - 删除A解析记录
-  ![RemoveRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR.gif)
+
+![RemoveRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR.gif)
 
 - 修改A解析记录
-  ![ModifyRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR.gif)
+
+![ModifyRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR.gif)
 
 - 回滚解析记录
-  ![RollbackRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR.gif)
+
+![RollbackRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR.gif)
 
 ## 常见问题
 
