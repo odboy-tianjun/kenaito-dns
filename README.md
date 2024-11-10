@@ -106,6 +106,7 @@ go build -o ./bin/kenaito-dns_darwin_amd64 main.go
 ![jietu1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/jietu1.png)
 
 #### 测试
+
 ```text
 服务所在的ip地址为 192.168.43.130
 
@@ -113,10 +114,18 @@ go build -o ./bin/kenaito-dns_darwin_amd64 main.go
 
 测试命令：watch -n 2 nslookup demo2024.odboy.cn 192.168.43.130
 ```
+
 - 新增A解析记录
+  ![AddRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/AddRR.gif)
+
 - 删除A解析记录
+  ![RemoveRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR.gif)
+
 - 修改A解析记录
+  ![ModifyRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR.gif)
+
 - 回滚解析记录
+  ![RollbackRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR.gif)
 
 ## 常见问题
 
