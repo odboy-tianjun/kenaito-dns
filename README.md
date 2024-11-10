@@ -108,7 +108,7 @@ go build -o ./bin/kenaito-dns_darwin_amd64 main.go
 #### 测试
 
 ```text
-服务所在的ip地址为 192.168.43.130
+DNS服务所在的ip地址为 192.168.43.130
 
 所需工具：brew install watch
 
