@@ -156,7 +156,7 @@ nslookup example.com 192.168.1.103
 
 - Gitea: [https://gitea.odboy.cn/odboy/kenaito-dns](https://gitea.odboy.cn/odboy/kenaito-dns)
 - Github: [https://github.com/odboy-tianjun/kenaito-dns](https://github.com/odboy-tianjun/kenaito-dns)
-- Gitee: [https://gitee.com/odboy/kenaito-dns](https://gitee.com/odboy/kenaito-dns)
+- Gitee(已关闭，单纯的不想放在gitee): [https://gitee.com/odboy/kenaito-dns](https://gitee.com/odboy/kenaito-dns)
 
 ## 微信交流群
 
