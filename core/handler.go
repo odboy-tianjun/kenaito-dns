@@ -41,7 +41,7 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	// 发送响应
 	err := w.WriteMsg(msg)
 	if err != nil {
-		fmt.Printf("=== Handle Failed === %v \n", err)
+		fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] WriteMsg Failed, %v \n", time.Now().Format(config.AppTimeFormat), err))
 	}
 }
 
@@ -61,7 +61,7 @@ func handleARecord(q dns.Question, msg *dns.Msg) {
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Printf("=== A记录 === 请求解析的域名：%s,解析的目标IP地址:%s\n", name, record.Value)
+			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] A记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
 			ip := net.ParseIP(record.Value)
 			rr := &dns.A{
 				Hdr: dns.RR_Header{
@@ -93,7 +93,7 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) {
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Printf("=== AAAA记录 === 请求解析的域名：%s,解析的目标IP地址:%s\n", name, record.Value)
+			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] AAAA记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
 			ip := net.ParseIP(record.Value)
 			rr := &dns.AAAA{
 				Hdr: dns.RR_Header{
@@ -125,7 +125,7 @@ func handleCNAMERecord(q dns.Question, msg *dns.Msg) {
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Printf("=== CNAME记录 === 请求解析的域名：%s,解析的目标域名:%s\n", name, record.Value)
+			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] CNAME记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
 			rr := &dns.CNAME{
 				Hdr: dns.RR_Header{
 					Name:   name,
@@ -156,7 +156,7 @@ func handleMXRecord(q dns.Question, msg *dns.Msg) {
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Printf("=== MX记录 === 请求解析的域名：%s,解析的目标域名:%s, MX优先级: 10\n", name, record.Value)
+			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] MX记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
 			rr := &dns.MX{
 				Hdr: dns.RR_Header{
 					Name:   name,
@@ -188,7 +188,7 @@ func handleTXTRecord(q dns.Question, msg *dns.Msg) {
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Printf("=== TXT记录 === 请求解析的域名：%s,解析的目标值:%s\n", name, record.Value)
+			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] TXT记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
 			rr := &dns.TXT{
 				Hdr: dns.RR_Header{
 					Name:   name,
