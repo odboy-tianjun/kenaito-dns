@@ -28,14 +28,19 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 		switch question.Qtype {
 		case dns.TypeA:
 			handleARecord(question, msg)
+			break
 		case dns.TypeAAAA:
 			handleAAAARecord(question, msg)
+			break
 		case dns.TypeCNAME:
 			handleCNAMERecord(question, msg)
+			break
 		case dns.TypeMX:
 			handleMXRecord(question, msg)
+			break
 		case dns.TypeTXT:
 			handleTXTRecord(question, msg)
+			break
 		}
 	}
 	// 发送响应
