@@ -121,15 +121,15 @@ go build -o ./bin/kenaito-dns_darwin_amd64 main.go
 
 - 删除A解析记录
 
-![RemoveRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR.gif)
+![RemoveRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR1.gif)
 
 - 修改A解析记录
 
-![ModifyRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR.gif)
+![ModifyRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR1.gif)
 
 - 回滚解析记录
 
-![RollbackRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR.gif)
+![RollbackRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR1.gif)
 
 ## 常见问题
 
