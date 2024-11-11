@@ -115,21 +115,10 @@ DNS服务所在的ip地址为 192.168.43.130
 测试命令：watch -n 2 nslookup demo2024.odboy.cn 192.168.43.130
 ```
 
-- 新增A解析记录
-
-![AddRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/AddRR.gif)
-
-- 删除A解析记录
-
-![RemoveRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR1.gif)
-
-- 修改A解析记录
-
-![ModifyRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR1.gif)
-
-- 回滚解析记录
-
-![RollbackRR](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR1.gif)
+- 新增A解析记录 [演示视频 在线看](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/AddRR.mp4)
+- 删除A解析记录 [演示视频 在线看](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RemoveRR.mp4)
+- 修改A解析记录 [演示视频 在线看](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRR.mp4)
+- 回滚解析记录 [演示视频 在线看](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRR.mp4)
 
 ## 常见问题
 
