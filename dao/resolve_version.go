@@ -38,6 +38,21 @@ func GetResolveVersion() int {
 	return records[0].Version
 }
 
+func FindResolveVersionByVersion(version int) *ResolveVersion {
+	var record ResolveVersion
+	session := Engine.Table("resolve_version")
+	session.And("version = ?", version)
+	result, err := session.Get(&record)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	if result {
+		return &record
+	}
+	return nil
+}
+
 func SaveResolveVersion(wrapper *ResolveVersion) (bool, error) {
 	// 全表更新为未发布
 	_, _ = Engine.Table("resolve_version").Update(ResolveVersion{IsRelease: 2}, ResolveVersion{})
@@ -50,6 +65,20 @@ func SaveResolveVersion(wrapper *ResolveVersion) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func ModifyResolveVersion(version int) error {
+	// 全表更新为未发布
+	_, err := Engine.Table("resolve_version").Update(ResolveVersion{IsRelease: 2}, ResolveVersion{})
+	if err != nil {
+		return err
+	}
+	// 更新具体的版本为已发布
+	_, err = Engine.Table("resolve_version").Update(ResolveVersion{IsRelease: 1}, ResolveVersion{Version: version})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func FindResolveVersionPage(pageNo int, pageSize int) []*ResolveVersion {

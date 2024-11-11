@@ -260,24 +260,24 @@ func InitRestFunc(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
 			return
 		}
-		versions := dao.FindResolveRecordByVersion(jsonObj.Version, true)
-		if len(versions) == 0 {
+		resolveVersion := dao.FindResolveVersionByVersion(jsonObj.Version)
+		if resolveVersion == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("版本号 %d 不存在, 回滚失败", jsonObj.Version)})
 			return
 		}
-		//executeResult, err := dao.ModifyResolveVersion(jsonObj.Version)
-		//if !executeResult {
-		//	c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("回滚失败, %v", err)})
-		//	return
-		//}
-		//cache.ReloadCache()
-		//body := make(map[string]interface{})
-		//body["currentVersion"] = jsonObj.Version
-		//c.JSON(http.StatusOK, gin.H{
-		//	"code":    0,
-		//	"message": "回滚成功",
-		//	"data":    body,
-		//})
+		err = dao.ModifyResolveVersion(jsonObj.Version)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("回滚失败, %v", err)})
+			return
+		}
+		cache.ReloadCache()
+		body := make(map[string]interface{})
+		body["currentVersion"] = jsonObj.Version
+		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "回滚成功",
+			"data":    body,
+		})
 		return
 	})
 }
