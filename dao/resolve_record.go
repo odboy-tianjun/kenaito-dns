@@ -182,13 +182,12 @@ func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
 			return false, err, 0, 0
 		}
 	}
-	updRecord := new(ResolveVersion)
-	updRecord.CurrentVersion = newVersion
-	condition := new(ResolveVersion)
-	condition.Id = 1
-	_, err := Engine.Table("resolve_config").Update(updRecord, condition)
-	if err != nil {
-		return false, err, 0, 0
+	// 新增版本记录
+	var resolveVersion ResolveVersion
+	resolveVersion.Version = newVersion
+	_, err2 := SaveResolveVersion(&resolveVersion)
+	if err2 != nil {
+		return false, err2, 0, 0
 	}
 	return true, nil, oldVersion, newVersion
 }
