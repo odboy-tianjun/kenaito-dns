@@ -119,6 +119,18 @@ DNS服务所在的ip地址为 192.168.43.130
 - 修改A解析记录 [演示视频](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/ModifyRecord_WM.mp4)
 - 回滚解析记录 [演示视频](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/RollbackRecord_WM.mp4)
 
+## 控制台预览
+
+- 新增解析记录
+
+![addrecord1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/add_record_func.png)
+![addrecord2](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/add_record_func2.png)
+
+- 版本回滚
+
+![rollback1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/rollback_func.png)
+![rollback2](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/rollback_func2.png)
+
 ## 常见问题
 
 #### nslookup 命令不存在解决
