@@ -66,6 +66,8 @@ func initRestfulServer() {
 			param.ErrorMessage,
 		)
 	}))
+	// 允许使用跨域请求，全局中间件
+	router.Use(core.Cors())
 	// 使用 Recovery 中间件，处理任何出现的错误，并防止服务崩溃
 	router.Use(gin.Recovery())
 	server := &http.Server{

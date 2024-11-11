@@ -7,9 +7,11 @@ package dao
  */
 import (
 	"fmt"
+	"kenaito-dns/config"
 	"kenaito-dns/domain"
 	"kenaito-dns/util"
 	"strings"
+	"time"
 )
 
 type ResolveRecord struct {
@@ -19,6 +21,9 @@ type ResolveRecord struct {
 	Ttl        int    `xorm:"not null integer 'ttl'" json:"ttl"`
 	Value      string `xorm:"not null text 'value'" json:"value"`
 	Version    int    `xorm:"not null integer 'version'" json:"version"`
+	CreateTime string `xorm:"not null text 'create_time'" json:"createTime"`
+	UpdateTime string `xorm:"not null text 'update_time'" json:"updateTime"`
+	Enabled    int    `xorm:"not null integer 'enabled'" json:"enabled"`
 }
 
 func (ResolveRecord) TableName() string {
@@ -50,9 +55,14 @@ func FindOneResolveRecord(wrapper *ResolveRecord, version int) *ResolveRecord {
 	return &record
 }
 
-func FindResolveRecordByVersion(version int) []ResolveRecord {
+func FindResolveRecordByVersion(version int, isAll bool) []ResolveRecord {
 	var records []ResolveRecord
-	err := Engine.Table("resolve_record").Where("`version` = ?", version).Find(&records)
+	session := Engine.Table("resolve_record")
+	session.Where("`version` = ?", version)
+	if !isAll {
+		session.Where("`enabled` = ?", 1)
+	}
+	err := session.Find(&records)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -102,8 +112,44 @@ func FindResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs)
 	}
 	return records
 }
+func CountResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs) int {
+	// 每页显示5条记录
+	if pageSize <= 5 {
+		pageSize = 5
+	}
+	// 要查询的页码
+	if pageNo <= 0 {
+		pageNo = 1
+	}
+	// 计算跳过的记录数
+	offset := (pageNo - 1) * pageSize
+	session := Engine.Table("resolve_record").Where("")
+	if args != nil {
+		if !util.IsBlank(args.Name) {
+			qs := "%" + strings.TrimSpace(args.Name) + "%"
+			session.And("`name` LIKE ?", qs)
+		}
+		if !util.IsBlank(args.Type) {
+			qs := strings.TrimSpace(args.Type)
+			session.And("`record_type` = ?", qs)
+		}
+		if !util.IsBlank(args.Value) {
+			qs := strings.TrimSpace(args.Value)
+			session.And("`value` = ?", qs)
+		}
+	}
+	session.And("`version` = ?", GetResolveVersion())
+	count, err := session.Limit(pageSize, offset).Count()
+	if err != nil {
+		fmt.Println(err)
+	}
+	return int(count)
+}
 
 func SaveResolveRecord(wrapper *ResolveRecord) (bool, error) {
+	wrapper.CreateTime = time.Now().Format(config.DataTimeFormat)
+	wrapper.UpdateTime = time.Now().Format(config.DataTimeFormat)
+	wrapper.Enabled = 1
 	_, err := Engine.Table("resolve_record").Insert(wrapper)
 	if err != nil {
 		fmt.Println(err)
@@ -116,7 +162,7 @@ func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
 	var backupRecords []*ResolveRecord
 	oldVersion := GetResolveVersion()
 	newVersion := GetResolveVersion() + 1
-	oldRecords := FindResolveRecordByVersion(oldVersion)
+	oldRecords := FindResolveRecordByVersion(oldVersion, true)
 	for _, oldRecord := range oldRecords {
 		newRecord := new(ResolveRecord)
 		newRecord.Name = oldRecord.Name
@@ -124,6 +170,9 @@ func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
 		newRecord.Ttl = oldRecord.Ttl
 		newRecord.Value = oldRecord.Value
 		newRecord.Version = newVersion
+		newRecord.CreateTime = oldRecord.CreateTime
+		newRecord.UpdateTime = oldRecord.UpdateTime
+		newRecord.Enabled = oldRecord.Enabled
 		backupRecords = append(backupRecords, newRecord)
 	}
 	record.Version = newVersion
@@ -180,6 +229,21 @@ func IsUpdResolveRecordExist(id int, wrapper *ResolveRecord) bool {
 }
 
 func ModifyResolveRecordById(id int, updateRecord *ResolveRecord) (bool, error) {
+	updateRecord.UpdateTime = time.Now().Format(config.DataTimeFormat)
+	wrapper := new(ResolveRecord)
+	wrapper.Id = id
+	_, err := Engine.Table("resolve_record").Update(updateRecord, wrapper)
+	if err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+	return true, nil
+}
+
+func SwitchResolveRecord(id int, enabled int) (bool, error) {
+	var updateRecord ResolveRecord
+	updateRecord.UpdateTime = time.Now().Format(config.DataTimeFormat)
+	updateRecord.Enabled = enabled
 	wrapper := new(ResolveRecord)
 	wrapper.Id = id
 	_, err := Engine.Table("resolve_record").Update(updateRecord, wrapper)

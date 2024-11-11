@@ -15,7 +15,7 @@ func ReloadCache() {
 	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache start")
 	KeyResolveRecordMap.Range(cleanKeyCache)
 	IdResolveRecordMap.Range(cleanIdCache)
-	resolveRecords := dao.FindResolveRecordByVersion(dao.GetResolveVersion())
+	resolveRecords := dao.FindResolveRecordByVersion(dao.GetResolveVersion(), false)
 	for _, record := range resolveRecords {
 		// id -> resolveRecord
 		IdResolveRecordMap.Store(record.Id, record)

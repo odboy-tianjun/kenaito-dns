@@ -13,10 +13,6 @@ Bind9不能直接支持API的方式添加解析记录， 通过脚本修改Bind�
 - gcc
 - go version >= 1.20
 
-## 接口文档
-
-[在线阅读](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/index.html)
-
 ## 项目结构
 
 - constant 常量
@@ -43,6 +39,9 @@ more than 7 hours
 
 - 支持回滚 2024-11-08 [ok]
 - 添加缓存 2024-11-09 [ok]
+- 新增Web控制台 2024-11-11 [ok]
+- 支持一键启/停用 2024-11-11 [ok]
+- 支持一键回滚 2024-11-11 [ok]
 
 ## 运行配置
 
@@ -143,7 +142,8 @@ nslookup example.com 192.168.1.103
 
 ## 代码托管（以私人仓库Gitea为准）
 
-- Gitea: [https://gitea.odboy.cn/odboy/kenaito-dns](https://gitea.odboy.cn/odboy/kenaito-dns)
+- Gitea后端: [https://gitea.odboy.cn/odboy/kenaito-dns](https://gitea.odboy.cn/odboy/kenaito-dns)
+- Gitea前端: [https://gitea.odboy.cn/odboy/kenaito-dns-front](https://gitea.odboy.cn/odboy/kenaito-dns-front)
 - Github: [https://github.com/odboy-tianjun/kenaito-dns](https://github.com/odboy-tianjun/kenaito-dns)
 - Gitee(已关闭，单纯的不想放在gitee): [https://gitee.com/odboy/kenaito-dns](https://gitee.com/odboy/kenaito-dns)
 

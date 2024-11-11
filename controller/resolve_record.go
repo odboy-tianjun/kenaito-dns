@@ -21,8 +21,59 @@ func InitRestFunc(r *gin.Engine) {
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
+			"code":    0,
+			"message": "success",
+			"data":    "pong",
 		})
+	})
+	// 测试解析状态
+	r.POST("/test", func(c *gin.Context) {
+		var jsonObj domain.TestArgs
+		err := c.ShouldBindJSON(&jsonObj)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
+			return
+		}
+		name := jsonObj.Name
+		valid := util.IsValidDomain(name)
+		if !valid {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "域名解析失败"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "域名解析成功",
+		})
+	})
+	// 启停记录
+	r.POST("/switch", func(c *gin.Context) {
+		var jsonObj domain.SwitchArgs
+		err := c.ShouldBindJSON(&jsonObj)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
+			return
+		}
+		_, err = dao.SwitchResolveRecord(jsonObj.Id, jsonObj.Enabled)
+		if err != nil {
+			if jsonObj.Enabled == 1 {
+				c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("启用失败, %v", err)})
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("停用失败, %v", err)})
+			}
+			return
+		}
+		cache.ReloadCache()
+		if jsonObj.Enabled == 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"code":    0,
+				"message": "启用成功",
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"code":    0,
+				"message": "停用成功",
+			})
+		}
 	})
 	// 创建RR记录
 	r.POST("/create", func(c *gin.Context) {
@@ -33,7 +84,9 @@ func InitRestFunc(r *gin.Engine) {
 			return
 		}
 		if dao.IsResolveRecordExist(newRecord) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "记录 " + newRecord.Name + " " + newRecord.RecordType + " " + newRecord.Value + " 已存在"})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": "记录 " + newRecord.Name + " " + newRecord.RecordType + " " + newRecord.Value + " 已存在",
+			})
 			return
 		}
 		newRecord.Ttl = jsonObj.Ttl
@@ -52,8 +105,9 @@ func InitRestFunc(r *gin.Engine) {
 		body["oldVersion"] = oldVersion
 		body["newVersion"] = newVersion
 		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
 			"message": "添加" + newRecord.RecordType + "记录成功",
-			"body":    body,
+			"data":    body,
 		})
 		return
 	})
@@ -84,8 +138,9 @@ func InitRestFunc(r *gin.Engine) {
 		body["oldVersion"] = oldVersion
 		body["newVersion"] = newVersion
 		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
 			"message": "删除" + newRecord.RecordType + "记录成功",
-			"body":    body,
+			"data":    body,
 		})
 		return
 	})
@@ -128,6 +183,7 @@ func InitRestFunc(r *gin.Engine) {
 		updRecord.RecordType = newRecord.RecordType
 		updRecord.Ttl = newRecord.Ttl
 		updRecord.Value = newRecord.Value
+		updRecord.CreateTime = localNewRecord.CreateTime
 		executeResult, err = dao.ModifyResolveRecordById(localNewRecord.Id, updRecord)
 		if !executeResult {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("更新"+newRecord.RecordType+"记录失败, %v", err)})
@@ -138,8 +194,9 @@ func InitRestFunc(r *gin.Engine) {
 		body["oldVersion"] = oldVersion
 		body["newVersion"] = newVersion
 		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
 			"message": "更新" + newRecord.RecordType + "记录成功",
-			"body":    body,
+			"data":    body,
 		})
 		return
 	})
@@ -152,7 +209,13 @@ func InitRestFunc(r *gin.Engine) {
 			return
 		}
 		records := dao.FindResolveRecordPage(jsonObj.Page, jsonObj.PageSize, &jsonObj)
-		c.JSON(http.StatusOK, gin.H{"message": "分页查询RR记录成功", "body": records})
+		count := dao.CountResolveRecordPage(jsonObj.Page, jsonObj.PageSize, &jsonObj)
+		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "分页查询RR记录成功",
+			"data":    records,
+			"count":   count,
+		})
 		return
 	})
 	// 根据id查询RR记录明细
@@ -164,13 +227,21 @@ func InitRestFunc(r *gin.Engine) {
 			return
 		}
 		records := dao.FindResolveRecordById(jsonObj.Id)
-		c.JSON(http.StatusOK, gin.H{"message": "根据id查询RR记录明细成功", "body": records})
+		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "根据id查询RR记录明细成功",
+			"data":    records,
+		})
 		return
 	})
 	// 查询变更历史记录
 	r.POST("/queryVersionList", func(c *gin.Context) {
 		records := dao.FindResolveVersion()
-		c.JSON(http.StatusOK, gin.H{"message": "查询变更历史记录列表成功", "body": records})
+		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "查询变更历史记录列表成功",
+			"data":    records,
+		})
 		return
 	})
 	// 回滚到某一版本
@@ -181,7 +252,7 @@ func InitRestFunc(r *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
 			return
 		}
-		versions := dao.FindResolveRecordByVersion(jsonObj.Version)
+		versions := dao.FindResolveRecordByVersion(jsonObj.Version, true)
 		if len(versions) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("版本号 %d 不存在, 回滚失败", jsonObj.Version)})
 			return
@@ -195,8 +266,9 @@ func InitRestFunc(r *gin.Engine) {
 		body := make(map[string]interface{})
 		body["currentVersion"] = jsonObj.Version
 		c.JSON(http.StatusOK, gin.H{
+			"code":    0,
 			"message": "回滚成功",
-			"body":    body,
+			"data":    body,
 		})
 		return
 	})

@@ -34,6 +34,15 @@ type QueryPageArgs struct {
 	Value    string `json:"value"`
 }
 
+type TestArgs struct {
+	Name string `json:"name" binding:"required"`
+}
+
+type SwitchArgs struct {
+	Id      int `json:"id" binding:"required"`
+	Enabled int `json:"enabled" binding:"required"`
+}
+
 type QueryByIdArgs struct {
 	Id int `json:"id" binding:"required"`
 }

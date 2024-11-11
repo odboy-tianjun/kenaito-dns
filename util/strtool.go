@@ -6,9 +6,14 @@ package util
  * @Date  20241107
  */
 import (
+	"fmt"
+	"golang.org/x/net/context"
+	"kenaito-dns/config"
+	"log"
 	"net"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // IsBlank 检查字符串是否空
@@ -38,9 +43,49 @@ func IsIPv6(ipAddr string) bool {
 
 // IsValidDomain 判断域名是否正常解析
 func IsValidDomain(domain string) bool {
-	_, err := net.LookupHost(domain)
+	dnsServer := getLocalIP()
+	if dnsServer == "" {
+		dnsServer = "223.5.5.5"
+	}
+	dnsServer = dnsServer + ":53"
+	_, err := lookupHostWithDNS(domain, dnsServer)
 	if err != nil {
 		return false
 	}
 	return true
+}
+
+func lookupHostWithDNS(host string, dnsServer string) ([]string, error) {
+	resolver := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{}
+			conn, err := d.DialContext(ctx, network, dnsServer)
+			if err != nil {
+				fmt.Println("[app]  [error]  "+time.Now().Format(config.AppTimeFormat)+" [DNSTool] 连接到 DNS 服务器失败: ", err)
+				return nil, err
+			}
+			return conn, nil
+		},
+	}
+	ips, err := resolver.LookupHost(context.Background(), host)
+	if err != nil {
+		return nil, err
+	}
+	return ips, nil
+}
+
+func getLocalIP() string {
+	addrList, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, addr := range addrList {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				return ipNet.IP.String()
+			}
+		}
+	}
+	return ""
 }
