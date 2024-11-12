@@ -6,5 +6,6 @@ package config
  * @Date  20241108
  */
 const (
-	DnsServerPort = ":53"
+	DNSServerPort   = ":53"
+	ForwardDNServer = "8.8.8.8:53" // Google的公共DNS服务器
 )

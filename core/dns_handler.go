@@ -27,19 +27,34 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	for _, question := range r.Question {
 		switch question.Qtype {
 		case dns.TypeA:
-			handleARecord(question, msg)
+			isFound := handleARecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeA, msg)
+			}
 			break
 		case dns.TypeAAAA:
-			handleAAAARecord(question, msg)
+			isFound := handleAAAARecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeAAAA, msg)
+			}
 			break
 		case dns.TypeCNAME:
-			handleCNAMERecord(question, msg)
+			isFound := handleCNAMERecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeCNAME, msg)
+			}
 			break
 		case dns.TypeMX:
-			handleMXRecord(question, msg)
+			isFound := handleMXRecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeMX, msg)
+			}
 			break
 		case dns.TypeTXT:
-			handleTXTRecord(question, msg)
+			isFound := handleTXTRecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeTXT, msg)
+			}
 			break
 		}
 	}
@@ -50,8 +65,43 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
+// 发送DNS请求到公共DNS服务器
+func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
+	m := new(dns.Msg)
+	m.Authoritative = true
+	m.RecursionAvailable = true
+	m.SetQuestion(name, rrType)
+	c := new(dns.Client)
+	r, _, err := c.Exchange(m, config.ForwardDNServer)
+	if err != nil {
+		fmt.Printf("[dns]  [error]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Lookup Failed: %s\n", err.Error())
+	}
+	if r.Rcode != dns.RcodeSuccess {
+		fmt.Printf("[dns]  [error]  " + time.Now().Format(config.AppTimeFormat) + " [DNS] Lookup Failed \n")
+	}
+	for _, record := range r.Answer {
+		switch r := record.(type) {
+		case *dns.A:
+			msg.Answer = append(msg.Answer, r)
+			break
+		case *dns.AAAA:
+			msg.Answer = append(msg.Answer, r)
+			break
+		case *dns.MX:
+			msg.Answer = append(msg.Answer, r)
+			break
+		case *dns.TXT:
+			msg.Answer = append(msg.Answer, r)
+			break
+		case *dns.CNAME:
+			msg.Answer = append(msg.Answer, r)
+			break
+		}
+	}
+}
+
 // 构建 A 记录 IPV4
-func handleARecord(q dns.Question, msg *dns.Msg) {
+func handleARecord(q dns.Question, msg *dns.Msg) bool {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
 	var records []dao.ResolveRecord
@@ -62,7 +112,13 @@ func handleARecord(q dns.Question, msg *dns.Msg) {
 		records = value.([]dao.ResolveRecord)
 		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
+		//// 支持pod内置域名解析
+		//similarityValue := cache.NameSet.GetSimilarityValue(queryName)
+		//if similarityValue != "" {
+		//	records = dao.FindResolveRecordByNameType(similarityValue, constant.R_A)
+		//} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_A)
+		//}
 	}
 	if len(records) > 0 {
 		for _, record := range records {
@@ -79,11 +135,13 @@ func handleARecord(q dns.Question, msg *dns.Msg) {
 			}
 			msg.Answer = append(msg.Answer, rr)
 		}
+		return true
 	}
+	return false
 }
 
 // 构建 AAAA 记录 IPV6
-func handleAAAARecord(q dns.Question, msg *dns.Msg) {
+func handleAAAARecord(q dns.Question, msg *dns.Msg) bool {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
 	var records []dao.ResolveRecord
@@ -94,7 +152,13 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) {
 		records = value.([]dao.ResolveRecord)
 		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
+		//// 支持pod内置域名解析
+		//similarityValue := cache.NameSet.GetSimilarityValue(queryName)
+		//if similarityValue != "" {
+		//	records = dao.FindResolveRecordByNameType(similarityValue, constant.R_AAAA)
+		//} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
+		//}
 	}
 	if len(records) > 0 {
 		for _, record := range records {
@@ -111,11 +175,13 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) {
 			}
 			msg.Answer = append(msg.Answer, rr)
 		}
+		return true
 	}
+	return false
 }
 
 // 构建 CNAME 记录
-func handleCNAMERecord(q dns.Question, msg *dns.Msg) {
+func handleCNAMERecord(q dns.Question, msg *dns.Msg) bool {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
 	var records []dao.ResolveRecord
@@ -142,11 +208,13 @@ func handleCNAMERecord(q dns.Question, msg *dns.Msg) {
 			}
 			msg.Answer = append(msg.Answer, rr)
 		}
+		return true
 	}
+	return false
 }
 
 // 构建 MX 记录
-func handleMXRecord(q dns.Question, msg *dns.Msg) {
+func handleMXRecord(q dns.Question, msg *dns.Msg) bool {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
 	var records []dao.ResolveRecord
@@ -174,11 +242,13 @@ func handleMXRecord(q dns.Question, msg *dns.Msg) {
 			}
 			msg.Answer = append(msg.Answer, rr)
 		}
+		return true
 	}
+	return false
 }
 
 // 构建 TXT 记录
-func handleTXTRecord(q dns.Question, msg *dns.Msg) {
+func handleTXTRecord(q dns.Question, msg *dns.Msg) bool {
 	name := q.Name
 	queryName := name[0 : len(name)-1]
 	var records []dao.ResolveRecord
@@ -205,5 +275,7 @@ func handleTXTRecord(q dns.Question, msg *dns.Msg) {
 			}
 			msg.Answer = append(msg.Answer, rr)
 		}
+		return true
 	}
+	return false
 }

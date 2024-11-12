@@ -71,7 +71,7 @@ func FindResolveRecordByVersion(version int, isAll bool) []ResolveRecord {
 
 func FindResolveRecordByNameType(name string, recordType string) []ResolveRecord {
 	var records []ResolveRecord
-	err := Engine.Table("resolve_record").Where("`name` = ? and `record_type` = ? and `version` = ?", name, recordType, GetResolveVersion()).Find(&records)
+	err := Engine.Table("resolve_record").Where("`name` = ? and `record_type` = ? and `version` = ? and `enabled` = ?", name, recordType, GetResolveVersion(), 1).Find(&records)
 	if err != nil {
 		fmt.Println(err)
 	}

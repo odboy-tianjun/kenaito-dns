@@ -1,7 +1,13 @@
 package cache
 
+/*
+ * @Description  缓存
+ * @Author  www.odboy.cn
+ * @Date  20241107
+ */
 import (
 	"fmt"
+	"kenaito-dns/common"
 	"kenaito-dns/config"
 	"kenaito-dns/dao"
 	"sync"
@@ -10,11 +16,13 @@ import (
 
 var KeyResolveRecordMap sync.Map
 var IdResolveRecordMap sync.Map
+var NameSet *common.Set
 
 func ReloadCache() {
 	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache start")
 	KeyResolveRecordMap.Range(cleanKeyCache)
 	IdResolveRecordMap.Range(cleanIdCache)
+	NameSet = common.NewSet()
 	resolveRecords := dao.FindResolveRecordByVersion(dao.GetResolveVersion(), false)
 	for _, record := range resolveRecords {
 		// id -> resolveRecord
@@ -31,6 +39,7 @@ func ReloadCache() {
 			records = append(newRecords, record)
 			KeyResolveRecordMap.Store(cacheKey, records)
 		}
+		NameSet.Add(record.Name)
 	}
 	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache end")
 }

@@ -131,6 +131,41 @@ DNS服务所在的ip地址为 192.168.43.130
 ![rollback1](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/rollback_func.png)
 ![rollback2](https://oss.odboy.cn/blog/files/onlinedoc/kenaito-dns/rollback_func2.png)
 
+## k8s集群中使用
+
+```shell
+# 使用的是CoreDNS，并且配置上游DNS服务器
+kubectl edit configmap coredns -n kube-system
+# ---------------------------------------------------
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health
+        lameduck 5s
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+          pods insecure
+          upstream 192.168.1.103
+          fallthrough in-addr.arpa ip6.arpa cluster.local io.local
+          ttl 30
+        }
+        prometheus :9153
+        cache 30
+        loop
+        reload
+        loadbalance
+    }
+kind: ConfigMap
+# ---------------------------------------------------
+
+# 逐个重启 coredns pod
+kubectl get pod -A|grep coredns|awk '{print $2}'|xargs -I{} kubectl delete pod {} -n kube-system
+
+# 进入容器验证
+```
+
 ## 常见问题
 
 #### nslookup 命令不存在解决

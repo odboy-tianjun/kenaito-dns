@@ -28,7 +28,7 @@ func initDNSServer() {
 	// 注册 DNS 请求处理函数
 	dns.HandleFunc(".", core.HandleDNSRequest)
 	// 设置服务器地址和协议
-	server := &dns.Server{Addr: config.DnsServerPort, Net: "udp"}
+	server := &dns.Server{Addr: config.DNSServerPort, Net: "udp"}
 	// 开始监听
 	fmt.Printf("[dns]  [info]  "+time.Now().Format(config.AppTimeFormat)+" Starting DNS server on %s\n", server.Addr)
 	if err := server.ListenAndServe(); err != nil {
