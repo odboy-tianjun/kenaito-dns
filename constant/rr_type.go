@@ -2,7 +2,7 @@ package constant
 
 /*
  * @Description  解析记录类型 常量
- * @Author  www.odboy.cn
+ * @Author  https://www.odboy.cn
  * @Date  20241107
  */
 const (

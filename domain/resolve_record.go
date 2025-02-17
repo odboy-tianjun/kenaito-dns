@@ -2,14 +2,15 @@ package domain
 
 /*
  * @Description  领域模型定义
- * @Author  www.odboy.cn
+ * @Author  https://www.odboy.cn
  * @Date  20241108
  */
 type CreateResolveRecord struct {
-	Name  string `json:"name" binding:"required"`
-	Type  string `json:"type" binding:"required"`
-	Ttl   int    `json:"ttl" binding:"required"`
-	Value string `json:"value" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Type        string `json:"type" binding:"required"`
+	Ttl         int    `json:"ttl" binding:"required"`
+	Value       string `json:"value" binding:"required"`
+	Description string `json:"description"`
 }
 
 type RemoveResolveRecord struct {
@@ -19,11 +20,12 @@ type RemoveResolveRecord struct {
 }
 
 type ModifyResolveRecord struct {
-	Id    int    `json:"id" binding:"required"`
-	Name  string `json:"name" binding:"required"`
-	Type  string `json:"type" binding:"required"`
-	Ttl   int    `json:"ttl"`
-	Value string `json:"value" binding:"required"`
+	Id          int    `json:"id" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Type        string `json:"type" binding:"required"`
+	Ttl         int    `json:"ttl"`
+	Value       string `json:"value" binding:"required"`
+	Description string `json:"description"`
 }
 
 type QueryPageArgs struct {

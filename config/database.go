@@ -2,7 +2,7 @@ package config
 
 /*
  * @Description  数据库配置
- * @Author  www.odboy.cn
+ * @Author  https://www.odboy.cn
  * @Date  20241108
  */
 import "xorm.io/core"

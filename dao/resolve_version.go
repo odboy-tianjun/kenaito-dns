@@ -2,7 +2,7 @@ package dao
 
 /*
  * @Description  解析配置定义与操作
- * @Author  www.odboy.cn
+ * @Author  https://www.odboy.cn
  * @Date  20241107
  */
 import (

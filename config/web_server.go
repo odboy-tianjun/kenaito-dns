@@ -2,7 +2,7 @@ package config
 
 /*
  * @Description  Web服务配置
- * @Author  www.odboy.cn
+ * @Author  https://www.odboy.cn
  * @Date  20241108
  */
 import "github.com/gin-gonic/gin"

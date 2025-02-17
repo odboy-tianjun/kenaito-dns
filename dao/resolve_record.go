@@ -2,7 +2,7 @@ package dao
 
 /*
  * @Description  解析记录定义与操作
- * @Author  www.odboy.cn
+ * @Author  https://www.odboy.cn
  * @Date  20241107
  */
 import (
@@ -15,15 +15,16 @@ import (
 )
 
 type ResolveRecord struct {
-	Id         int    `xorm:"pk not null integer 'id' autoincr" json:"id"`
-	Name       string `xorm:"not null text 'name'" json:"name"`
-	RecordType string `xorm:"not null text 'record_type'" json:"recordType"`
-	Ttl        int    `xorm:"not null integer 'ttl'" json:"ttl"`
-	Value      string `xorm:"not null text 'value'" json:"value"`
-	Version    int    `xorm:"not null integer 'version'" json:"version"`
-	CreateTime string `xorm:"not null text 'create_time'" json:"createTime"`
-	UpdateTime string `xorm:"not null text 'update_time'" json:"updateTime"`
-	Enabled    int    `xorm:"not null integer 'enabled'" json:"enabled"`
+	Id          int    `xorm:"pk not null integer 'id' autoincr" json:"id"`
+	Name        string `xorm:"not null text 'name'" json:"name"`
+	RecordType  string `xorm:"not null text 'record_type'" json:"recordType"`
+	Ttl         int    `xorm:"not null integer 'ttl'" json:"ttl"`
+	Value       string `xorm:"not null text 'value'" json:"value"`
+	Description string `xorm:"null text 'description'" json:"description"`
+	Version     int    `xorm:"not null integer 'version'" json:"version"`
+	CreateTime  string `xorm:"not null text 'create_time'" json:"createTime"`
+	UpdateTime  string `xorm:"not null text 'update_time'" json:"updateTime"`
+	Enabled     int    `xorm:"not null integer 'enabled'" json:"enabled"`
 }
 
 func (ResolveRecord) TableName() string {
@@ -169,6 +170,7 @@ func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
 		newRecord.RecordType = oldRecord.RecordType
 		newRecord.Ttl = oldRecord.Ttl
 		newRecord.Value = oldRecord.Value
+		newRecord.Description = oldRecord.Description
 		newRecord.Version = newVersion
 		newRecord.CreateTime = oldRecord.CreateTime
 		newRecord.UpdateTime = oldRecord.UpdateTime
