@@ -7,13 +7,15 @@ package core
  */
 import (
 	"fmt"
-	"github.com/miekg/dns"
 	"kenaito-dns/cache"
 	"kenaito-dns/config"
 	"kenaito-dns/constant"
 	"kenaito-dns/dao"
 	"net"
+	"sync/atomic"
 	"time"
+
+	"github.com/miekg/dns"
 )
 
 func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
@@ -65,38 +67,68 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
+var dnsServerIndex uint64
+
 // 发送DNS请求到公共DNS服务器
 func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 	m := new(dns.Msg)
 	m.Authoritative = true
 	m.RecursionAvailable = true
 	m.SetQuestion(name, rrType)
-	c := new(dns.Client)
-	r, _, err := c.Exchange(m, config.ForwardDNServer)
-	if err != nil {
-		fmt.Printf("[dns]  [error]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Lookup Failed: %s\n", err.Error())
+
+	dnsGlobalServers := config.ForwardDNSServers
+	dnsGlobalServerCount := len(dnsGlobalServers)
+	if dnsGlobalServerCount == 0 {
+		fmt.Printf("[dns]  [error]  " + time.Now().Format(config.AppTimeFormat) + " [DNS] No forward DNS servers configured\n")
+		return
 	}
-	if r.Rcode != dns.RcodeSuccess {
-		fmt.Printf("[dns]  [error]  " + time.Now().Format(config.AppTimeFormat) + " [DNS] Lookup Failed \n")
-	}
-	for _, record := range r.Answer {
-		switch r := record.(type) {
-		case *dns.A:
-			msg.Answer = append(msg.Answer, r)
-			break
-		case *dns.AAAA:
-			msg.Answer = append(msg.Answer, r)
-			break
-		case *dns.MX:
-			msg.Answer = append(msg.Answer, r)
-			break
-		case *dns.TXT:
-			msg.Answer = append(msg.Answer, r)
-			break
-		case *dns.CNAME:
-			msg.Answer = append(msg.Answer, r)
-			break
+
+	var success bool
+	var lastErr error
+
+	for i := 0; i < dnsGlobalServerCount; i++ {
+		// 负载均衡
+		idx := atomic.AddUint64(&dnsServerIndex, 1) % uint64(dnsGlobalServerCount)
+		server := dnsGlobalServers[idx]
+
+		c := new(dns.Client)
+		c.Timeout = 2 * time.Second
+
+		r, _, err := c.Exchange(m, server)
+		if err != nil {
+			lastErr = err
+			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Failed to query %s: %s\n", server, err.Error())
+			continue
 		}
+
+		if r.Rcode != dns.RcodeSuccess {
+			lastErr = fmt.Errorf("DNS server returned error code: %d", r.Rcode)
+			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Server %s returned error code: %d\n", server, r.Rcode)
+			continue
+		}
+
+		for _, record := range r.Answer {
+			switch r := record.(type) {
+			case *dns.A:
+				msg.Answer = append(msg.Answer, r)
+			case *dns.AAAA:
+				msg.Answer = append(msg.Answer, r)
+			case *dns.MX:
+				msg.Answer = append(msg.Answer, r)
+			case *dns.TXT:
+				msg.Answer = append(msg.Answer, r)
+			case *dns.CNAME:
+				msg.Answer = append(msg.Answer, r)
+			}
+		}
+
+		success = true
+		fmt.Printf("[dns]  [info]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Successfully queried from %s\n", server)
+		break
+	}
+
+	if !success {
+		fmt.Printf("[dns]  [error]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] All forward DNS servers failed. Last error: %v\n", lastErr)
 	}
 }
 
@@ -112,13 +144,7 @@ func handleARecord(q dns.Question, msg *dns.Msg) bool {
 		records = value.([]dao.ResolveRecord)
 		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
-		//// 支持pod内置域名解析
-		//similarityValue := cache.NameSet.GetSimilarityValue(queryName)
-		//if similarityValue != "" {
-		//	records = dao.FindResolveRecordByNameType(similarityValue, constant.R_A)
-		//} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_A)
-		//}
 	}
 	if len(records) > 0 {
 		for _, record := range records {
@@ -152,13 +178,7 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) bool {
 		records = value.([]dao.ResolveRecord)
 		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
-		//// 支持pod内置域名解析
-		//similarityValue := cache.NameSet.GetSimilarityValue(queryName)
-		//if similarityValue != "" {
-		//	records = dao.FindResolveRecordByNameType(similarityValue, constant.R_AAAA)
-		//} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
-		//}
 	}
 	if len(records) > 0 {
 		for _, record := range records {
