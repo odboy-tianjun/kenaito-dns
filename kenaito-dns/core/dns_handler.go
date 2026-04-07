@@ -33,42 +33,41 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 		return
 	}
 
-	question := r.Question[0]
-	//// 遍历请求中的问题部分，生成相应的回答
-	//for _, question := range r.Question {
-	switch question.Qtype {
-	case dns.TypeA:
-		isFound := handleARecord(question, msg)
-		if !isFound {
-			forwardGlobalServer(question.Name, dns.TypeA, msg)
+	// 遍历请求中的问题部分，生成相应的回答
+	for _, question := range r.Question {
+		switch question.Qtype {
+		case dns.TypeA:
+			isFound := handleARecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeA, msg)
+			}
+			break
+		case dns.TypeAAAA:
+			isFound := handleAAAARecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeAAAA, msg)
+			}
+			break
+		case dns.TypeCNAME:
+			isFound := handleCNAMERecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeCNAME, msg)
+			}
+			break
+		case dns.TypeMX:
+			isFound := handleMXRecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeMX, msg)
+			}
+			break
+		case dns.TypeTXT:
+			isFound := handleTXTRecord(question, msg)
+			if !isFound {
+				forwardGlobalServer(question.Name, dns.TypeTXT, msg)
+			}
+			break
 		}
-		break
-	case dns.TypeAAAA:
-		isFound := handleAAAARecord(question, msg)
-		if !isFound {
-			forwardGlobalServer(question.Name, dns.TypeAAAA, msg)
-		}
-		break
-	case dns.TypeCNAME:
-		isFound := handleCNAMERecord(question, msg)
-		if !isFound {
-			forwardGlobalServer(question.Name, dns.TypeCNAME, msg)
-		}
-		break
-	case dns.TypeMX:
-		isFound := handleMXRecord(question, msg)
-		if !isFound {
-			forwardGlobalServer(question.Name, dns.TypeMX, msg)
-		}
-		break
-	case dns.TypeTXT:
-		isFound := handleTXTRecord(question, msg)
-		if !isFound {
-			forwardGlobalServer(question.Name, dns.TypeTXT, msg)
-		}
-		break
 	}
-	//}
 	// 发送响应
 	err := w.WriteMsg(msg)
 	if err != nil {

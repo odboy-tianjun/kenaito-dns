@@ -7,7 +7,6 @@ package controller
  */
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"kenaito-dns/cache"
 	"kenaito-dns/constant"
 	"kenaito-dns/dao"
@@ -15,6 +14,8 @@ import (
 	"kenaito-dns/util"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func InitRestFunc(r *gin.Engine) {
@@ -79,7 +80,7 @@ func InitRestFunc(r *gin.Engine) {
 	r.POST("/create", func(c *gin.Context) {
 		var jsonObj domain.CreateResolveRecord
 		err := c.ShouldBindJSON(&jsonObj)
-		newRecord, isErr := validRequestBody(c, err, jsonObj.Name, jsonObj.Type, jsonObj.Ttl, jsonObj.Value, false)
+		newRecord, isErr := validRequestBody(c, err, jsonObj.Name, jsonObj.Type, jsonObj.Ttl, jsonObj.Value, jsonObj.Description, false)
 		if isErr {
 			return
 		}
@@ -115,7 +116,7 @@ func InitRestFunc(r *gin.Engine) {
 	r.POST("/remove", func(c *gin.Context) {
 		var jsonObj domain.RemoveResolveRecord
 		err := c.ShouldBindJSON(&jsonObj)
-		newRecord, isErr := validRequestBody(c, err, jsonObj.Name, jsonObj.Type, 0, jsonObj.Value, true)
+		newRecord, isErr := validRequestBody(c, err, jsonObj.Name, jsonObj.Type, 0, jsonObj.Value, "", true)
 		if isErr {
 			return
 		}
@@ -148,7 +149,7 @@ func InitRestFunc(r *gin.Engine) {
 	r.POST("/modify", func(c *gin.Context) {
 		var jsonObj domain.ModifyResolveRecord
 		err := c.ShouldBindJSON(&jsonObj)
-		newRecord, isErr := validModifyRequestBody(c, err, jsonObj.Name, jsonObj.Type, jsonObj.Ttl, jsonObj.Value)
+		newRecord, isErr := validModifyRequestBody(c, err, jsonObj.Name, jsonObj.Type, jsonObj.Ttl, jsonObj.Value, jsonObj.Description)
 		if isErr {
 			return
 		}
@@ -184,6 +185,7 @@ func InitRestFunc(r *gin.Engine) {
 		updRecord.Ttl = newRecord.Ttl
 		updRecord.Value = newRecord.Value
 		updRecord.CreateTime = localNewRecord.CreateTime
+		updRecord.Description = newRecord.Description
 		executeResult, err = dao.ModifyResolveRecordById(localNewRecord.Id, updRecord)
 		if !executeResult {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("更新"+newRecord.RecordType+"记录失败, %v", err)})
@@ -281,7 +283,7 @@ func InitRestFunc(r *gin.Engine) {
 		return
 	})
 }
-func validRequestBody(c *gin.Context, err error, name string, recordType string, ttl int, value string, isDelete bool) (*dao.ResolveRecord, bool) {
+func validRequestBody(c *gin.Context, err error, name string, recordType string, ttl int, value string, description string, isDelete bool) (*dao.ResolveRecord, bool) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
 		return nil, true
@@ -342,9 +344,10 @@ func validRequestBody(c *gin.Context, err error, name string, recordType string,
 	newRecord.Name = strings.TrimSpace(name)
 	newRecord.RecordType = strings.TrimSpace(recordType)
 	newRecord.Value = strings.TrimSpace(value)
+	newRecord.Description = strings.TrimSpace(description)
 	return newRecord, false
 }
-func validModifyRequestBody(c *gin.Context, err error, name string, recordType string, ttl int, value string) (*dao.ResolveRecord, bool) {
+func validModifyRequestBody(c *gin.Context, err error, name string, recordType string, ttl int, value string, description string) (*dao.ResolveRecord, bool) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
 		return nil, true
@@ -391,5 +394,6 @@ func validModifyRequestBody(c *gin.Context, err error, name string, recordType s
 	newRecord.Name = strings.TrimSpace(name)
 	newRecord.RecordType = strings.TrimSpace(recordType)
 	newRecord.Value = strings.TrimSpace(value)
+	newRecord.Description = strings.TrimSpace(description)
 	return newRecord, false
 }
