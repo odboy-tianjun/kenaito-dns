@@ -25,41 +25,50 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	msg.Authoritative = true
 	// 将 DNS 响应标记为递归可用
 	msg.RecursionAvailable = true
-	// 遍历请求中的问题部分，生成相应的回答
-	for _, question := range r.Question {
-		switch question.Qtype {
-		case dns.TypeA:
-			isFound := handleARecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeA, msg)
-			}
-			break
-		case dns.TypeAAAA:
-			isFound := handleAAAARecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeAAAA, msg)
-			}
-			break
-		case dns.TypeCNAME:
-			isFound := handleCNAMERecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeCNAME, msg)
-			}
-			break
-		case dns.TypeMX:
-			isFound := handleMXRecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeMX, msg)
-			}
-			break
-		case dns.TypeTXT:
-			isFound := handleTXTRecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeTXT, msg)
-			}
-			break
-		}
+
+	// 避免出现畸形的DNS请求包
+	if len(r.Question) == 0 {
+		msg.Rcode = dns.RcodeFormatError
+		w.WriteMsg(msg)
+		return
 	}
+
+	question := r.Question[0]
+	//// 遍历请求中的问题部分，生成相应的回答
+	//for _, question := range r.Question {
+	switch question.Qtype {
+	case dns.TypeA:
+		isFound := handleARecord(question, msg)
+		if !isFound {
+			forwardGlobalServer(question.Name, dns.TypeA, msg)
+		}
+		break
+	case dns.TypeAAAA:
+		isFound := handleAAAARecord(question, msg)
+		if !isFound {
+			forwardGlobalServer(question.Name, dns.TypeAAAA, msg)
+		}
+		break
+	case dns.TypeCNAME:
+		isFound := handleCNAMERecord(question, msg)
+		if !isFound {
+			forwardGlobalServer(question.Name, dns.TypeCNAME, msg)
+		}
+		break
+	case dns.TypeMX:
+		isFound := handleMXRecord(question, msg)
+		if !isFound {
+			forwardGlobalServer(question.Name, dns.TypeMX, msg)
+		}
+		break
+	case dns.TypeTXT:
+		isFound := handleTXTRecord(question, msg)
+		if !isFound {
+			forwardGlobalServer(question.Name, dns.TypeTXT, msg)
+		}
+		break
+	}
+	//}
 	// 发送响应
 	err := w.WriteMsg(msg)
 	if err != nil {
@@ -98,6 +107,12 @@ func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 		if err != nil {
 			lastErr = err
 			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Failed to query %s: %s\n", server, err.Error())
+			continue
+		}
+
+		if r == nil {
+			lastErr = fmt.Errorf("DNS server returned nil response")
+			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Server %s returned nil response\n", server)
 			continue
 		}
 
@@ -140,9 +155,9 @@ func handleARecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_A)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_A)
 	}
@@ -174,9 +189,9 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_AAAA)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
 	}
@@ -208,9 +223,9 @@ func handleCNAMERecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_CNAME)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_CNAME)
 	}
@@ -241,9 +256,9 @@ func handleMXRecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_MX)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_MX)
 	}
