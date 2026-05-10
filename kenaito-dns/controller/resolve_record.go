@@ -93,12 +93,12 @@ func InitRestFunc(r *gin.Engine) {
 		newRecord.Ttl = jsonObj.Ttl
 		executeResult, err, oldVersion, newVersion := dao.BackupResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份%s记录失败, %v", newRecord.RecordType, err)})
 			return
 		}
 		executeResult, _ = dao.SaveResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("添加"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("添加%s记录失败, %v", newRecord.RecordType, err)})
 			return
 		}
 		cache.ReloadCache()
@@ -126,12 +126,12 @@ func InitRestFunc(r *gin.Engine) {
 		}
 		executeResult, err, oldVersion, newVersion := dao.BackupResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份%s记录失败, %v", newRecord.RecordType, err)})
 			return
 		}
 		executeResult, err = dao.RemoveResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("删除"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("删除%s记录失败, %v", newRecord.RecordType, err)})
 			return
 		}
 		cache.ReloadCache()
@@ -168,12 +168,12 @@ func InitRestFunc(r *gin.Engine) {
 		localOldRecord := dao.FindResolveRecordById(jsonObj.Id)
 		executeResult, err, oldVersion, newVersion := dao.BackupResolveRecord(newRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("备份%s记录失败, %v", newRecord.RecordType, err)})
 			return
 		}
 		localNewRecord := dao.FindOneResolveRecord(localOldRecord, newVersion)
 		if localNewRecord == nil || localNewRecord.Id == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("查询待更新" + newRecord.RecordType + "记录失败")})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("查询待更新%s记录失败", newRecord.RecordType)})
 			return
 		}
 		if localNewRecord.Ttl == 0 {
@@ -188,7 +188,7 @@ func InitRestFunc(r *gin.Engine) {
 		updRecord.Description = newRecord.Description
 		executeResult, err = dao.ModifyResolveRecordById(localNewRecord.Id, updRecord)
 		if !executeResult {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("更新"+newRecord.RecordType+"记录失败, %v", err)})
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("更新%s记录失败, %v", newRecord.RecordType, err)})
 			return
 		}
 		cache.ReloadCache()
@@ -211,7 +211,7 @@ func InitRestFunc(r *gin.Engine) {
 			return
 		}
 		records := dao.FindResolveRecordPage(jsonObj.Page, jsonObj.PageSize, &jsonObj)
-		count := dao.CountResolveRecordPage(jsonObj.Page, jsonObj.PageSize, &jsonObj)
+		count := dao.CountResolveRecordPage(&jsonObj)
 		c.JSON(http.StatusOK, gin.H{
 			"code":    0,
 			"message": "分页查询RR记录成功",
@@ -352,7 +352,7 @@ func validModifyRequestBody(c *gin.Context, err error, name string, recordType s
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("校验失败, %v", err)})
 		return nil, true
 	}
-	if ttl != 0 && ttl < 10 {
+	if ttl < 10 {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "参数缓存有效时间(ttl)有误，必须大于等于10"})
 		return nil, true
 	}

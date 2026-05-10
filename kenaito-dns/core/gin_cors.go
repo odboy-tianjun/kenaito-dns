@@ -23,18 +23,18 @@ func Cors() gin.HandlerFunc {
 			headerStr = "access-control-allow-origin, access-control-allow-headers"
 		}
 		if origin != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-			c.Header("Access-Control-Allow-Origin", "*")                                                                                                                                                                                                                                                                         // 允许访问所有域
-			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")                                                                                                                                                                                                                                  // 服务器支持的所有跨域请求的方法
-			c.Header("Access-Control-Allow-Headers", "Authorization, Content-Length, X-CSRF-Token, Token, session, X_Requested_With, Accept, Origin, Host, Connection, Accept-Encoding, Accept-Language, DNT, X-CustomHeader, Keep-Alive, User-Agent, X-Requested-With, If-Modified-Since, Cache-Control, Content-Type, Pragma") // 允许的头类型
-			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Pragma, FooBar")                                                                                                        // 允许跨域设置，可以返回其他子段
-			c.Header("Access-Control-Max-Age", "172800")                                                                                                                                                                                                                                                                         // 缓存请求信息，单位为秒
-			c.Header("Access-Control-Allow-Credentials", "false")                                                                                                                                                                                                                                                                // 跨域请求是否需要带cookie信息，默认设置为true
-			c.Set("content-type", "application/json;charset=utf8")                                                                                                                                                                                                                                                               // 设置返回格式是json
+			c.Header("Access-Control-Allow-Origin", origin)  // 允许访问域
+			c.Header("Access-Control-Allow-Methods", "POST") // 服务器支持的跨域请求的方法
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Pragma, FooBar") // 允许跨域设置，可以返回其他子段
+			c.Header("Access-Control-Max-Age", "86400")                                                                                                                                                                   // 24小时                                                                                                                                                                                                                                                                 // 缓存请求信息，单位为秒
+			c.Header("Access-Control-Allow-Credentials", "true")                                                                                                                                                          // 跨域请求是否需要带cookie信息，默认设置为true
+			c.Set("content-type", "application/json;charset=utf8")                                                                                                                                                        // 设置返回格式是json
 		}
-		// 放行所有OPTIONS方法
+		// 放行 OPTIONS 预检请求
 		if method == "OPTIONS" {
-			c.JSON(http.StatusOK, "Options Request!")
+			c.AbortWithStatus(http.StatusNoContent)
+			return
 		}
 		// 处理请求
 		c.Next()

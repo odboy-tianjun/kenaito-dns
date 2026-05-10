@@ -8,10 +8,9 @@ package cache
 import (
 	"fmt"
 	"kenaito-dns/common"
-	"kenaito-dns/config"
 	"kenaito-dns/dao"
+	"kenaito-dns/util"
 	"sync"
-	"time"
 )
 
 var KeyResolveRecordMap sync.Map
@@ -19,7 +18,7 @@ var IdResolveRecordMap sync.Map
 var NameSet *common.Set
 
 func ReloadCache() {
-	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache start")
+	fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Reload cache start")
 	KeyResolveRecordMap.Range(cleanKeyCache)
 	IdResolveRecordMap.Range(cleanIdCache)
 	NameSet = common.NewSet()
@@ -30,18 +29,18 @@ func ReloadCache() {
 		// key -> resolveRecord
 		cacheKey := fmt.Sprintf("%s-%s", record.Name, record.RecordType)
 		records, ok := KeyResolveRecordMap.Load(cacheKey)
-		if !ok {
+		if ok {
+			recordSlice := records.([]dao.ResolveRecord)
+			recordSlice = append(recordSlice, record)
+			KeyResolveRecordMap.Store(cacheKey, recordSlice)
+		} else {
 			var tempRecords []dao.ResolveRecord
 			tempRecords = append(tempRecords, record)
 			KeyResolveRecordMap.Store(cacheKey, tempRecords)
-		} else {
-			var newRecords = records.([]dao.ResolveRecord)
-			records = append(newRecords, record)
-			KeyResolveRecordMap.Store(cacheKey, records)
 		}
 		NameSet.Add(record.Name)
 	}
-	fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Reload cache end")
+	fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Reload cache end")
 }
 
 func cleanKeyCache(key any, value any) bool {

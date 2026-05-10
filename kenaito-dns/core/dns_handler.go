@@ -11,6 +11,7 @@ import (
 	"kenaito-dns/config"
 	"kenaito-dns/constant"
 	"kenaito-dns/dao"
+	"kenaito-dns/util"
 	"net"
 	"sync/atomic"
 	"time"
@@ -71,7 +72,7 @@ func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	// 发送响应
 	err := w.WriteMsg(msg)
 	if err != nil {
-		fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] WriteMsg Failed, %v \n", time.Now().Format(config.AppTimeFormat), err))
+		fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] WriteMsg Failed, %v \n", util.NowStr(), err))
 	}
 }
 
@@ -87,7 +88,7 @@ func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 	dnsGlobalServers := config.ForwardDNSServers
 	dnsGlobalServerCount := len(dnsGlobalServers)
 	if dnsGlobalServerCount == 0 {
-		fmt.Printf("[dns]  [error]  " + time.Now().Format(config.AppTimeFormat) + " [DNS] No forward DNS servers configured\n")
+		fmt.Printf("[dns]  [error]  " + util.NowStr() + " [DNS] No forward DNS servers configured\n")
 		return
 	}
 
@@ -105,19 +106,19 @@ func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 		r, _, err := c.Exchange(m, server)
 		if err != nil {
 			lastErr = err
-			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Failed to query %s: %s\n", server, err.Error())
+			fmt.Printf("[dns]  [warn]  "+util.NowStr()+" [DNS] Failed to query %s: %s\n", server, err.Error())
 			continue
 		}
 
 		if r == nil {
 			lastErr = fmt.Errorf("DNS server returned nil response")
-			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Server %s returned nil response\n", server)
+			fmt.Printf("[dns]  [warn]  "+util.NowStr()+" [DNS] Server %s returned nil response\n", server)
 			continue
 		}
 
 		if r.Rcode != dns.RcodeSuccess {
 			lastErr = fmt.Errorf("DNS server returned error code: %d", r.Rcode)
-			fmt.Printf("[dns]  [warn]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Server %s returned error code: %d\n", server, r.Rcode)
+			fmt.Printf("[dns]  [warn]  "+util.NowStr()+" [DNS] Server %s returned error code: %d\n", server, r.Rcode)
 			continue
 		}
 
@@ -137,12 +138,12 @@ func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 		}
 
 		success = true
-		fmt.Printf("[dns]  [info]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] Successfully queried from %s\n", server)
+		fmt.Printf("[dns]  [info]  "+util.NowStr()+" [DNS] Successfully queried from %s\n", server)
 		break
 	}
 
 	if !success {
-		fmt.Printf("[dns]  [error]  "+time.Now().Format(config.AppTimeFormat)+" [DNS] All forward DNS servers failed. Last error: %v\n", lastErr)
+		fmt.Printf("[dns]  [error]  "+util.NowStr()+" [DNS] All forward DNS servers failed. Last error: %v\n", lastErr)
 	}
 }
 
@@ -154,15 +155,15 @@ func handleARecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_A)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_A)
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] A记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
+			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] A记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
 			ip := net.ParseIP(record.Value)
 			rr := &dns.A{
 				Hdr: dns.RR_Header{
@@ -188,15 +189,15 @@ func handleAAAARecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_AAAA)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] AAAA记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
+			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] AAAA记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
 			ip := net.ParseIP(record.Value)
 			rr := &dns.AAAA{
 				Hdr: dns.RR_Header{
@@ -222,15 +223,15 @@ func handleCNAMERecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_CNAME)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_CNAME)
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] CNAME记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
+			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] CNAME记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
 			rr := &dns.CNAME{
 				Hdr: dns.RR_Header{
 					Name:   name,
@@ -255,15 +256,15 @@ func handleMXRecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_MX)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_MX)
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] MX记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
+			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] MX记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
 			rr := &dns.MX{
 				Hdr: dns.RR_Header{
 					Name:   name,
@@ -289,15 +290,15 @@ func handleTXTRecord(q dns.Question, msg *dns.Msg) bool {
 	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_TXT)
 	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
 	if ok {
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache start")
+		fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
 		records = value.([]dao.ResolveRecord)
-		fmt.Println("[app]  [info]  " + time.Now().Format(config.AppTimeFormat) + " [Cache] Query cache end")
+		fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
 	} else {
 		records = dao.FindResolveRecordByNameType(queryName, constant.R_TXT)
 	}
 	if len(records) > 0 {
 		for _, record := range records {
-			fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] TXT记录, 主机名称: %s, 目标值: %s \n", time.Now().Format(config.AppTimeFormat), name, record.Value))
+			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] TXT记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
 			rr := &dns.TXT{
 				Hdr: dns.RR_Header{
 					Name:   name,

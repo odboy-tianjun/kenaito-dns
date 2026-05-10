@@ -23,19 +23,17 @@ func (ResolveVersion) TableName() string {
 }
 
 func GetResolveVersion() int {
-	var records []ResolveVersion
-	session := Engine.Table("resolve_version")
-	session.Desc("id")
-	session.And("is_release = ?", 1)
-	err := session.Find(&records)
-	if err != nil {
-		fmt.Println(err)
+	var record ResolveVersion
+	has, err := Engine.Table("resolve_version").
+		Where("is_release = ?", 1).
+		Desc("id").
+		Limit(1).
+		Get(&record)
+
+	if err != nil || !has {
 		return 0
 	}
-	if len(records) == 0 {
-		return 0
-	}
-	return records[0].Version
+	return record.Version
 }
 
 func FindResolveVersionByVersion(version int) *ResolveVersion {

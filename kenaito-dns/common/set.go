@@ -44,7 +44,7 @@ func (s *Set) GetSimilarityValue(text string) string {
 	return ""
 }
 
-func main() {
+func test() {
 	set := NewSet()
 	set.Add("bad")
 	set.Add("man")

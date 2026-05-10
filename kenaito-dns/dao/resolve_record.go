@@ -113,17 +113,8 @@ func FindResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs)
 	}
 	return records
 }
-func CountResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs) int {
-	// 每页显示5条记录
-	if pageSize <= 5 {
-		pageSize = 5
-	}
-	// 要查询的页码
-	if pageNo <= 0 {
-		pageNo = 1
-	}
+func CountResolveRecordPage(args *domain.QueryPageArgs) int {
 	// 计算跳过的记录数
-	offset := (pageNo - 1) * pageSize
 	session := Engine.Table("resolve_record").Where("")
 	if args != nil {
 		if !util.IsBlank(args.Name) {
@@ -140,7 +131,7 @@ func CountResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs
 		}
 	}
 	session.And("`version` = ?", GetResolveVersion())
-	count, err := session.Limit(pageSize, offset).Count()
+	count, err := session.Count()
 	if err != nil {
 		fmt.Println(err)
 	}

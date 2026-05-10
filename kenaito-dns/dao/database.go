@@ -10,6 +10,7 @@ import (
 	"github.com/go-xorm/xorm"
 	_ "github.com/mattn/go-sqlite3"
 	"kenaito-dns/config"
+	"kenaito-dns/util"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("[xorm] [info]  " + time.Now().Format(config.AppTimeFormat) + " 数据库引擎创建成功(database engine create success)")
+	fmt.Println("[xorm] [info]  " + util.NowStr() + " 数据库引擎创建成功(database engine create success)")
 	// 连接池配置
 	Engine.SetMaxOpenConns(config.DataSourceMaxOpenConnectionSize)
 	Engine.SetMaxIdleConns(config.DataSourceMaxIdleConnectionSize)
@@ -35,5 +36,5 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("[xorm] [info]  " + time.Now().Format(config.AppTimeFormat) + " 数据库连接成功(database engine connect success)")
+	fmt.Println("[xorm] [info]  " + util.NowStr() + " 数据库连接成功(database engine connect success)")
 }

@@ -8,12 +8,10 @@ package util
 import (
 	"fmt"
 	"golang.org/x/net/context"
-	"kenaito-dns/config"
 	"log"
 	"net"
 	"regexp"
 	"strings"
-	"time"
 )
 
 // IsBlank 检查字符串是否空
@@ -62,7 +60,7 @@ func lookupHostWithDNS(host string, dnsServer string) ([]string, error) {
 			d := net.Dialer{}
 			conn, err := d.DialContext(ctx, network, dnsServer)
 			if err != nil {
-				fmt.Println("[app]  [error]  "+time.Now().Format(config.AppTimeFormat)+" [DNSTool] 连接到 DNS 服务器失败: ", err)
+				fmt.Println("[app]  [error]  "+NowStr()+" [DNSTool] 连接到 DNS 服务器失败: ", err)
 				return nil, err
 			}
 			return conn, nil
