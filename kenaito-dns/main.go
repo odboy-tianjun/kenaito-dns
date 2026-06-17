@@ -21,55 +21,46 @@ import (
 func main() {
 	fmt.Println("[app]  [info]  " + util.NowStr() + " kenaito-dns version = " + config.AppVersion)
 	cache.ReloadCache()
-	go initDNSServer()
+	go initDNSServerUDP()
+	go initDNSServerTCP()
 	initRestfulServer()
 }
 
-func initDNSServer() {
-	// 注册 DNS 请求处理函数
+func initDNSServerUDP() {
 	dns.HandleFunc(".", core.HandleDNSRequest)
-	// 设置服务器地址和协议
 	server := &dns.Server{Addr: config.DNSServerPort, Net: "udp"}
-	// 开始监听
-	fmt.Printf("[dns]  [info]  "+util.NowStr()+" Starting DNS server on %s\n", server.Addr)
+	fmt.Printf("[dns]  [info]  "+util.NowStr()+" Starting DNS server on %s (UDP)\n", server.Addr)
 	if err := server.ListenAndServe(); err != nil {
-		fmt.Printf("[dns]  [error]  "+util.NowStr()+" Failed to start DNS server: %s\n", err.Error())
+		fmt.Printf("[dns]  [error]  "+util.NowStr()+" Failed to start DNS server (UDP): %s\n", err.Error())
+	}
+}
+
+func initDNSServerTCP() {
+	dns.HandleFunc(".", core.HandleDNSRequest)
+	server := &dns.Server{Addr: config.DNSServerPort, Net: "tcp"}
+	fmt.Printf("[dns]  [info]  "+util.NowStr()+" Starting DNS server on %s (TCP)\n", server.Addr)
+	if err := server.ListenAndServe(); err != nil {
+		fmt.Printf("[dns]  [error]  "+util.NowStr()+" Failed to start DNS server (TCP): %s\n", err.Error())
 	}
 }
 
 func initRestfulServer() {
 	gin.SetMode(config.WebMode)
-	// 创建一个新的 Gin 引擎实例，使用 gin.New() 方法来创建一个不包含任何默认中间件的实例
 	router := gin.New()
-	// LoggerWithFormatter 中间件会写入日志到 gin.DefaultWriter
-	// 默认 gin.DefaultWriter = os.Stdout
-	// 自定义的日志格式化函数
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		// 自定义日志格式
-		return fmt.Sprintf("[gin]  [info]  %s [Request] [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-			// 请求时间戳
+		return fmt.Sprintf("[gin]  [info]  %s [Request] [%s] \\\"%s %s %s %d %s \\\"%s\\\" %s\\\"\\n",
 			param.TimeStamp.Format(config.AppTimeFormat),
-			// 客户端 IP 地址
 			param.ClientIP,
-			// 请求方法 (GET, POST 等)
 			param.Method,
-			// 请求路径
 			param.Path,
-			// 请求协议
 			param.Request.Proto,
-			// 响应状态码
 			param.StatusCode,
-			// 请求延迟时间
 			param.Latency,
-			// 用户代理
 			param.Request.UserAgent(),
-			// 错误信息（如果有的话）
 			param.ErrorMessage,
 		)
 	}))
-	// 允许使用跨域请求，全局中间件
 	router.Use(core.Cors())
-	// 使用 Recovery 中间件，处理任何出现的错误，并防止服务崩溃
 	router.Use(gin.Recovery())
 	server := &http.Server{
 		Addr:         config.WebServerPort,
@@ -81,6 +72,6 @@ func initRestfulServer() {
 	fmt.Printf("[gin]  [info]  "+util.NowStr()+" Start Gin server: %s\n", config.WebServerPort)
 	err := server.ListenAndServe()
 	if err != nil {
-		fmt.Printf("[gin]  [error]  "+util.NowStr()+" Failed to start Gin server: %s\n", config.WebServerPort)
+		fmt.Printf("[gin]  [error]  "+util.NowStr()+" Failed to start Gin server: %s\n", err.Error())
 	}
 }

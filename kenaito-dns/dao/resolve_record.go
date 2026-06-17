@@ -80,18 +80,15 @@ func FindResolveRecordByNameType(name string, recordType string) []ResolveRecord
 }
 
 func FindResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs) []*ResolveRecord {
-	// 每页显示5条记录
 	if pageSize <= 5 {
 		pageSize = 5
 	}
-	// 要查询的页码
 	if pageNo <= 0 {
 		pageNo = 1
 	}
-	// 计算跳过的记录数
 	offset := (pageNo - 1) * pageSize
 	records := make([]*ResolveRecord, 0)
-	session := Engine.Table("resolve_record").Where("")
+	session := Engine.Table("resolve_record")
 	if args != nil {
 		if !util.IsBlank(args.Name) {
 			qs := "%" + strings.TrimSpace(args.Name) + "%"
@@ -113,9 +110,9 @@ func FindResolveRecordPage(pageNo int, pageSize int, args *domain.QueryPageArgs)
 	}
 	return records
 }
+
 func CountResolveRecordPage(args *domain.QueryPageArgs) int {
-	// 计算跳过的记录数
-	session := Engine.Table("resolve_record").Where("")
+	session := Engine.Table("resolve_record")
 	if args != nil {
 		if !util.IsBlank(args.Name) {
 			qs := "%" + strings.TrimSpace(args.Name) + "%"
@@ -150,11 +147,22 @@ func SaveResolveRecord(wrapper *ResolveRecord) (bool, error) {
 	return true, nil
 }
 
+// BackupResolveRecord 备份当前版本记录到新版本，使用事务保证原子性
 func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
-	var backupRecords []*ResolveRecord
+	session := Engine.NewSession()
+	defer session.Close()
+
+	err := session.Begin()
+	if err != nil {
+		return false, err, 0, 0
+	}
+
 	oldVersion := GetResolveVersion()
-	newVersion := GetResolveVersion() + 1
+	newVersion := oldVersion + 1
+
+	// 备份旧版本记录
 	oldRecords := FindResolveRecordByVersion(oldVersion, true)
+	var backupRecords []*ResolveRecord
 	for _, oldRecord := range oldRecords {
 		newRecord := new(ResolveRecord)
 		newRecord.Name = oldRecord.Name
@@ -168,20 +176,39 @@ func BackupResolveRecord(record *ResolveRecord) (bool, error, int, int) {
 		newRecord.Enabled = oldRecord.Enabled
 		backupRecords = append(backupRecords, newRecord)
 	}
+
 	record.Version = newVersion
 	if len(backupRecords) > 0 {
-		_, err := Engine.Table("resolve_record").Insert(backupRecords)
+		_, err = session.Table("resolve_record").Insert(backupRecords)
 		if err != nil {
+			session.Rollback()
 			return false, err, 0, 0
 		}
 	}
+
 	// 新增版本记录
 	var resolveVersion ResolveVersion
 	resolveVersion.Version = newVersion
-	_, err2 := SaveResolveVersion(&resolveVersion)
-	if err2 != nil {
-		return false, err2, 0, 0
+	resolveVersion.CreateTime = time.Now().Format(config.DataTimeFormat)
+	resolveVersion.IsRelease = 1
+	// 先将所有版本标记为未发布
+	_, err = session.Table("resolve_version").Update(ResolveVersion{IsRelease: 2}, ResolveVersion{})
+	if err != nil {
+		session.Rollback()
+		return false, err, 0, 0
 	}
+	// 插入新版本记录
+	_, err = session.Table("resolve_version").Insert(&resolveVersion)
+	if err != nil {
+		session.Rollback()
+		return false, err, 0, 0
+	}
+
+	err = session.Commit()
+	if err != nil {
+		return false, err, 0, 0
+	}
+
 	return true, nil, oldVersion, newVersion
 }
 

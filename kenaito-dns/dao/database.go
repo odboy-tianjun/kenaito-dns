@@ -7,11 +7,12 @@ package dao
  */
 import (
 	"fmt"
-	"github.com/go-xorm/xorm"
-	_ "github.com/mattn/go-sqlite3"
 	"kenaito-dns/config"
 	"kenaito-dns/util"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+	"xorm.io/xorm"
 )
 
 var (
@@ -32,6 +33,13 @@ func init() {
 	// 日志相关
 	Engine.ShowSQL(config.DataSourceShowLog)
 	Engine.Logger().SetLevel(config.DataSourceLogLevel)
+	// 自动建表
+	err = Engine.Sync(new(ResolveRecord), new(ResolveVersion))
+	if err != nil {
+		fmt.Printf("[xorm] [error]  %s 数据库同步表结构失败: %v\n", util.NowStr(), err)
+	} else {
+		fmt.Println("[xorm] [info]  " + util.NowStr() + " 数据库表结构同步成功(database schema synced)")
+	}
 	err = Engine.Ping()
 	if err != nil {
 		fmt.Println(err)

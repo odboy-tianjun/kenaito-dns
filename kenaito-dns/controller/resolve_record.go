@@ -245,7 +245,7 @@ func InitRestFunc(r *gin.Engine) {
 			return
 		}
 		records := dao.FindResolveVersionPage(jsonObj.Page, jsonObj.PageSize)
-		count := dao.CountResolveVersionPage(jsonObj.Page, jsonObj.PageSize)
+		count := dao.CountResolveVersionPage()
 		c.JSON(http.StatusOK, gin.H{
 			"code":    0,
 			"message": "分页查询变更历史记录成功",

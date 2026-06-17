@@ -6,7 +6,6 @@ package common
  * @Date  20241112
  */
 import (
-	"fmt"
 	"strings"
 )
 
@@ -42,12 +41,4 @@ func (s *Set) GetSimilarityValue(text string) string {
 		}
 	}
 	return ""
-}
-
-func test() {
-	set := NewSet()
-	set.Add("bad")
-	set.Add("man")
-	fmt.Println(set.Contains("man")) // 输出: true
-	fmt.Println(set.Size())          // 输出: 2
 }

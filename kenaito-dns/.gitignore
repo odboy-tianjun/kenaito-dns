@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Database files
+dns.sqlite3
+
 # Test binary, built with `go test -c`
 *.test
 

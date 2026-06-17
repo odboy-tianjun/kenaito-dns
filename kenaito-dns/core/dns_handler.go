@@ -22,63 +22,137 @@ import (
 func HandleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	msg := new(dns.Msg)
 	msg.SetReply(r)
-	// 将 DNS 响应标记为权威应答
 	msg.Authoritative = true
-	// 将 DNS 响应标记为递归可用
 	msg.RecursionAvailable = true
 
-	// 避免出现畸形的DNS请求包
 	if len(r.Question) == 0 {
 		msg.Rcode = dns.RcodeFormatError
 		w.WriteMsg(msg)
 		return
 	}
 
-	// 遍历请求中的问题部分，生成相应的回答
 	for _, question := range r.Question {
 		switch question.Qtype {
-		case dns.TypeA:
-			isFound := handleARecord(question, msg)
+		case dns.TypeA, dns.TypeAAAA, dns.TypeCNAME, dns.TypeMX, dns.TypeTXT:
+			isFound := handleRecordByType(question, msg)
 			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeA, msg)
+				forwardGlobalServer(question.Name, question.Qtype, msg)
 			}
-			break
-		case dns.TypeAAAA:
-			isFound := handleAAAARecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeAAAA, msg)
-			}
-			break
-		case dns.TypeCNAME:
-			isFound := handleCNAMERecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeCNAME, msg)
-			}
-			break
-		case dns.TypeMX:
-			isFound := handleMXRecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeMX, msg)
-			}
-			break
-		case dns.TypeTXT:
-			isFound := handleTXTRecord(question, msg)
-			if !isFound {
-				forwardGlobalServer(question.Name, dns.TypeTXT, msg)
-			}
-			break
+		default:
+			// 不支持的类型，转发到上游 DNS
+			forwardGlobalServer(question.Name, question.Qtype, msg)
 		}
 	}
-	// 发送响应
+
 	err := w.WriteMsg(msg)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] WriteMsg Failed, %v \n", util.NowStr(), err))
 	}
 }
 
+// handleRecordByType 根据记录类型统一处理，避免重复代码
+func handleRecordByType(q dns.Question, msg *dns.Msg) bool {
+	name := q.Name
+	queryName := name[0 : len(name)-1]
+
+	// 根据 DNS Qtype 映射到常量类型
+	var rrType string
+	switch q.Qtype {
+	case dns.TypeA:
+		rrType = constant.R_A
+	case dns.TypeAAAA:
+		rrType = constant.R_AAAA
+	case dns.TypeCNAME:
+		rrType = constant.R_CNAME
+	case dns.TypeMX:
+		rrType = constant.R_MX
+	case dns.TypeTXT:
+		rrType = constant.R_TXT
+	default:
+		return false
+	}
+
+	cacheKey := fmt.Sprintf("%s-%s", queryName, rrType)
+	var records []dao.ResolveRecord
+	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
+	if ok {
+		records = value.([]dao.ResolveRecord)
+	} else {
+		records = dao.FindResolveRecordByNameType(queryName, rrType)
+	}
+
+	if len(records) == 0 {
+		return false
+	}
+
+	for _, record := range records {
+		switch q.Qtype {
+		case dns.TypeA:
+			ip := net.ParseIP(record.Value)
+			rr := &dns.A{
+				Hdr: dns.RR_Header{
+					Name:   name,
+					Rrtype: dns.TypeA,
+					Class:  dns.ClassINET,
+					Ttl:    uint32(record.Ttl) * 60,
+				},
+				A: ip,
+			}
+			msg.Answer = append(msg.Answer, rr)
+		case dns.TypeAAAA:
+			ip := net.ParseIP(record.Value)
+			rr := &dns.AAAA{
+				Hdr: dns.RR_Header{
+					Name:   name,
+					Rrtype: dns.TypeAAAA,
+					Class:  dns.ClassINET,
+					Ttl:    uint32(record.Ttl) * 60,
+				},
+				AAAA: ip,
+			}
+			msg.Answer = append(msg.Answer, rr)
+		case dns.TypeCNAME:
+			rr := &dns.CNAME{
+				Hdr: dns.RR_Header{
+					Name:   name,
+					Rrtype: dns.TypeCNAME,
+					Class:  dns.ClassINET,
+					Ttl:    uint32(record.Ttl) * 60,
+				},
+				Target: record.Value + ".",
+			}
+			msg.Answer = append(msg.Answer, rr)
+		case dns.TypeMX:
+			rr := &dns.MX{
+				Hdr: dns.RR_Header{
+					Name:   name,
+					Rrtype: dns.TypeMX,
+					Class:  dns.ClassINET,
+					Ttl:    uint32(record.Ttl) * 60,
+				},
+				Preference: 10,
+				Mx:         record.Value + ".",
+			}
+			msg.Answer = append(msg.Answer, rr)
+		case dns.TypeTXT:
+			rr := &dns.TXT{
+				Hdr: dns.RR_Header{
+					Name:   name,
+					Rrtype: dns.TypeTXT,
+					Class:  dns.ClassINET,
+					Ttl:    uint32(record.Ttl) * 60,
+				},
+				Txt: []string{record.Value},
+			}
+			msg.Answer = append(msg.Answer, rr)
+		}
+	}
+	return true
+}
+
 var dnsServerIndex uint64
 
-// 发送DNS请求到公共DNS服务器
+// forwardGlobalServer 发送DNS请求到公共DNS服务器
 func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 	m := new(dns.Msg)
 	m.Authoritative = true
@@ -96,7 +170,6 @@ func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 	var lastErr error
 
 	for i := 0; i < dnsGlobalServerCount; i++ {
-		// 负载均衡
 		idx := atomic.AddUint64(&dnsServerIndex, 1) % uint64(dnsGlobalServerCount)
 		server := dnsGlobalServers[idx]
 
@@ -145,172 +218,4 @@ func forwardGlobalServer(name string, rrType uint16, msg *dns.Msg) {
 	if !success {
 		fmt.Printf("[dns]  [error]  "+util.NowStr()+" [DNS] All forward DNS servers failed. Last error: %v\n", lastErr)
 	}
-}
-
-// 构建 A 记录 IPV4
-func handleARecord(q dns.Question, msg *dns.Msg) bool {
-	name := q.Name
-	queryName := name[0 : len(name)-1]
-	var records []dao.ResolveRecord
-	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_A)
-	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
-	if ok {
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
-		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
-	} else {
-		records = dao.FindResolveRecordByNameType(queryName, constant.R_A)
-	}
-	if len(records) > 0 {
-		for _, record := range records {
-			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] A记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
-			ip := net.ParseIP(record.Value)
-			rr := &dns.A{
-				Hdr: dns.RR_Header{
-					Name:   name,
-					Rrtype: dns.TypeA,
-					Class:  dns.ClassINET,
-					Ttl:    uint32(record.Ttl) * 60,
-				},
-				A: ip,
-			}
-			msg.Answer = append(msg.Answer, rr)
-		}
-		return true
-	}
-	return false
-}
-
-// 构建 AAAA 记录 IPV6
-func handleAAAARecord(q dns.Question, msg *dns.Msg) bool {
-	name := q.Name
-	queryName := name[0 : len(name)-1]
-	var records []dao.ResolveRecord
-	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_AAAA)
-	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
-	if ok {
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
-		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
-	} else {
-		records = dao.FindResolveRecordByNameType(queryName, constant.R_AAAA)
-	}
-	if len(records) > 0 {
-		for _, record := range records {
-			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] AAAA记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
-			ip := net.ParseIP(record.Value)
-			rr := &dns.AAAA{
-				Hdr: dns.RR_Header{
-					Name:   name,
-					Rrtype: dns.TypeAAAA,
-					Class:  dns.ClassINET,
-					Ttl:    uint32(record.Ttl) * 60,
-				},
-				AAAA: ip,
-			}
-			msg.Answer = append(msg.Answer, rr)
-		}
-		return true
-	}
-	return false
-}
-
-// 构建 CNAME 记录
-func handleCNAMERecord(q dns.Question, msg *dns.Msg) bool {
-	name := q.Name
-	queryName := name[0 : len(name)-1]
-	var records []dao.ResolveRecord
-	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_CNAME)
-	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
-	if ok {
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
-		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
-	} else {
-		records = dao.FindResolveRecordByNameType(queryName, constant.R_CNAME)
-	}
-	if len(records) > 0 {
-		for _, record := range records {
-			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] CNAME记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
-			rr := &dns.CNAME{
-				Hdr: dns.RR_Header{
-					Name:   name,
-					Rrtype: dns.TypeCNAME,
-					Class:  dns.ClassINET,
-					Ttl:    uint32(record.Ttl) * 60,
-				},
-				Target: record.Value + ".",
-			}
-			msg.Answer = append(msg.Answer, rr)
-		}
-		return true
-	}
-	return false
-}
-
-// 构建 MX 记录
-func handleMXRecord(q dns.Question, msg *dns.Msg) bool {
-	name := q.Name
-	queryName := name[0 : len(name)-1]
-	var records []dao.ResolveRecord
-	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_MX)
-	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
-	if ok {
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
-		records = value.([]dao.ResolveRecord)
-		//fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
-	} else {
-		records = dao.FindResolveRecordByNameType(queryName, constant.R_MX)
-	}
-	if len(records) > 0 {
-		for _, record := range records {
-			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] MX记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
-			rr := &dns.MX{
-				Hdr: dns.RR_Header{
-					Name:   name,
-					Rrtype: dns.TypeMX,
-					Class:  dns.ClassINET,
-					Ttl:    uint32(record.Ttl) * 60,
-				},
-				Preference: 10,
-				Mx:         record.Value + ".",
-			}
-			msg.Answer = append(msg.Answer, rr)
-		}
-		return true
-	}
-	return false
-}
-
-// 构建 TXT 记录
-func handleTXTRecord(q dns.Question, msg *dns.Msg) bool {
-	name := q.Name
-	queryName := name[0 : len(name)-1]
-	var records []dao.ResolveRecord
-	cacheKey := fmt.Sprintf("%s-%s", queryName, constant.R_TXT)
-	value, ok := cache.KeyResolveRecordMap.Load(cacheKey)
-	if ok {
-		fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache start")
-		records = value.([]dao.ResolveRecord)
-		fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Query cache end")
-	} else {
-		records = dao.FindResolveRecordByNameType(queryName, constant.R_TXT)
-	}
-	if len(records) > 0 {
-		for _, record := range records {
-			//fmt.Println(fmt.Sprintf("[app]  [info]  %s [DNS] TXT记录, 主机名称: %s, 目标值: %s \n", util.NowStr(), name, record.Value))
-			rr := &dns.TXT{
-				Hdr: dns.RR_Header{
-					Name:   name,
-					Rrtype: dns.TypeTXT,
-					Class:  dns.ClassINET,
-					Ttl:    uint32(record.Ttl) * 60,
-				},
-				Txt: []string{record.Value},
-			}
-			msg.Answer = append(msg.Answer, rr)
-		}
-		return true
-	}
-	return false
 }

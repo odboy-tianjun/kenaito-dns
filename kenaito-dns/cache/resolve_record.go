@@ -17,16 +17,26 @@ var KeyResolveRecordMap sync.Map
 var IdResolveRecordMap sync.Map
 var NameSet *common.Set
 
+var reloadMu sync.Mutex
+
 func ReloadCache() {
+	reloadMu.Lock()
+	defer reloadMu.Unlock()
+
 	fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Reload cache start")
-	KeyResolveRecordMap.Range(cleanKeyCache)
-	IdResolveRecordMap.Range(cleanIdCache)
+	// 清空旧缓存
+	KeyResolveRecordMap.Range(func(key, value any) bool {
+		KeyResolveRecordMap.Delete(key)
+		return true
+	})
+	IdResolveRecordMap.Range(func(key, value any) bool {
+		IdResolveRecordMap.Delete(key)
+		return true
+	})
 	NameSet = common.NewSet()
 	resolveRecords := dao.FindResolveRecordByVersion(dao.GetResolveVersion(), false)
 	for _, record := range resolveRecords {
-		// id -> resolveRecord
 		IdResolveRecordMap.Store(record.Id, record)
-		// key -> resolveRecord
 		cacheKey := fmt.Sprintf("%s-%s", record.Name, record.RecordType)
 		records, ok := KeyResolveRecordMap.Load(cacheKey)
 		if ok {
@@ -41,14 +51,4 @@ func ReloadCache() {
 		NameSet.Add(record.Name)
 	}
 	fmt.Println("[app]  [info]  " + util.NowStr() + " [Cache] Reload cache end")
-}
-
-func cleanKeyCache(key any, value any) bool {
-	KeyResolveRecordMap.Delete(key)
-	return true
-}
-
-func cleanIdCache(key any, value any) bool {
-	IdResolveRecordMap.Delete(key)
-	return true
 }

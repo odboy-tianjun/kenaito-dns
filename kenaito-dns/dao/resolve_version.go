@@ -52,9 +52,7 @@ func FindResolveVersionByVersion(version int) *ResolveVersion {
 }
 
 func SaveResolveVersion(wrapper *ResolveVersion) (bool, error) {
-	// 全表更新为未发布
 	_, _ = Engine.Table("resolve_version").Update(ResolveVersion{IsRelease: 2}, ResolveVersion{})
-	// 新增发布记录
 	wrapper.CreateTime = time.Now().Format(config.DataTimeFormat)
 	wrapper.IsRelease = 1
 	_, err := Engine.Table("resolve_version").Insert(wrapper)
@@ -66,12 +64,10 @@ func SaveResolveVersion(wrapper *ResolveVersion) (bool, error) {
 }
 
 func ModifyResolveVersion(version int) error {
-	// 全表更新为未发布
 	_, err := Engine.Table("resolve_version").Update(ResolveVersion{IsRelease: 2}, ResolveVersion{})
 	if err != nil {
 		return err
 	}
-	// 更新具体的版本为已发布
 	_, err = Engine.Table("resolve_version").Update(ResolveVersion{IsRelease: 1}, ResolveVersion{Version: version})
 	if err != nil {
 		return err
@@ -80,15 +76,12 @@ func ModifyResolveVersion(version int) error {
 }
 
 func FindResolveVersionPage(pageNo int, pageSize int) []*ResolveVersion {
-	// 每页显示5条记录
 	if pageSize <= 5 {
 		pageSize = 5
 	}
-	// 要查询的页码
 	if pageNo <= 0 {
 		pageNo = 1
 	}
-	// 计算跳过的记录数
 	offset := (pageNo - 1) * pageSize
 	records := make([]*ResolveVersion, 0)
 	session := Engine.Table("resolve_version")
@@ -99,19 +92,11 @@ func FindResolveVersionPage(pageNo int, pageSize int) []*ResolveVersion {
 	}
 	return records
 }
-func CountResolveVersionPage(pageNo int, pageSize int) int {
-	// 每页显示5条记录
-	if pageSize <= 5 {
-		pageSize = 5
-	}
-	// 要查询的页码
-	if pageNo <= 0 {
-		pageNo = 1
-	}
-	// 计算跳过的记录数
-	offset := (pageNo - 1) * pageSize
+
+// CountResolveVersionPage 返回版本总数（不分页）
+func CountResolveVersionPage() int {
 	session := Engine.Table("resolve_version")
-	count, err := session.Limit(pageSize, offset).Count()
+	count, err := session.Count()
 	if err != nil {
 		fmt.Println(err)
 	}
